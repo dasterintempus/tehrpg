@@ -1,0 +1,32 @@
+import glob
+import os
+import os.path
+
+env = Environment(ENV = {'PATH' : os.environ['PATH']})
+
+env.Replace(CC = "clang")
+env.Replace(CXX = "clang++")
+
+if ARGUMENTS.get('debug', 0):
+  env["MODE"] = "debug"
+else:
+  env["MODE"] = "release"
+
+includedirs = ["/home/dasterin/lib"]
+
+for includedir in includedir:
+  env.Append(CXXFLAGS = "-I" + includedir)
+
+if env["MODE"] == "debug":
+  env.Append(CXXFLAGS = "-g")
+elif env["MODE"] == "release":
+  env.Append(CXXFLAGS = "-O3")
+
+#server section
+serverbuildpath = os.path.join(".", "build", env["MODE"], "netmon")
+
+serversources = glob.glob("src/serv/*.cpp")
+
+server = env.Program(target=buildpath, source=serversources)
+
+env.Default("server")

@@ -1,0 +1,31 @@
+Got connection from 127.0.0.1
+Trying to send out: Welcome client #1
+got data in: /login
+line: /login
+Gameserver sees: /login
+Line size: 6
+Trying to send out: Username: 
+got data in: dasterin
+line: dasterin
+Trying to send out: Password: 
+got data in: bladeshadow0
+line: bladeshadow0
+Trying to send out: Logged in!
+got data in: /kill 1
+line: /kill 1
+line: /login
+Gameserver sees: /login
+Line size: 6
+line: dasterin
+line: bladeshadow0
+line: /shutdown
+Finish called.
+Done lock acquired.
+Application sleep loop done
+Terminating console connection thread
+Acquired netserver donelock
+Netserver finish called
+Netserver done, returning from start thread
+Netserver thread completed
+Gameserver finish called
+Gameserver thread completed
