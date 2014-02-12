@@ -2,19 +2,26 @@
 #include "netserver.h"
 #include "gameserver.h"
 #include "consoleconnection.h"
+#include "mysql.h"
+#include "rpggame.h"
+#include "commandparser.h"
 
 #include <iostream>
 
 namespace teh
 {
 	Application::Application(int argc, char** argv)
-		: _gameserver(0), _netserver(0),
+		: _gameserver(0), _netserver(0), _rpggame(0),
 		_gameserverthread(0),
 		_netserverthread(0),
+		_rpggamethread(0),
+		_consolethread(0),
 		_done(false),
 		_consoleconnection(0),
 		_mysql(0)
 	{
+		srand(time(0));
+		
 		boost::program_options::options_description desc("Allowed Options");
 		desc.add_options()
 			("help", "produce help message")
@@ -34,6 +41,11 @@ namespace teh
 		_consolethread = new sf::Thread(&ConsoleConnection::start, _consoleconnection);
 
 		_mysql = new MySQL("localhost", 3306, "tehmud", "Tur7tle$", "tehmud");
+		
+		_rpggame = new RPGGame(this, _gameserver);
+		_rpggamethread = new sf::Thread(&RPGGame::start, _rpggame);
+		
+		_commandparser = new CommandParser();
 	}
 	
 	Application::~Application()
@@ -52,6 +64,10 @@ namespace teh
 			delete _consolethread;
 		if (_mysql)
 			delete _mysql;
+		if (_rpggame)
+			delete _rpggame;
+		if (_rpggamethread)
+			delete _rpggamethread;
 	}
 	
 	void Application::start()
@@ -61,6 +77,8 @@ namespace teh
 		_consolethread->launch();
 		
 		_netserverthread->launch();
+		
+		_rpggamethread->launch();
 		
 		_donemutex.lock();
 		while (!_done)
@@ -87,6 +105,9 @@ namespace teh
 		std::cerr << "Gameserver finish called" << std::endl;
 		_gameserverthread->wait();
 		std::cerr << "Gameserver thread completed" << std::endl;
+		
+		_rpggame->finish();
+		_rpggamethread->wait();
 	}
 	
 	void Application::finish()
@@ -100,6 +121,16 @@ namespace teh
 	MySQL* Application::sql()
 	{
 		return _mysql;
+	}
+	
+	RPGGame* Application::rpg()
+	{
+		return _rpggame;
+	}
+	
+	CommandParser* Application::parser()
+	{
+		return _commandparser;
 	}
 
 	void Application::start_gameserver()

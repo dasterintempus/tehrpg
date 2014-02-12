@@ -5,10 +5,12 @@
 
 #include "gameserver_interface.h"
 #include "typedefs.h"
+#include "commandparser.h"
 
 namespace teh
 {
 	class Application;
+	class MySQL;
 	
 	class GameClient
 		: public GameConnectionInterface
@@ -17,23 +19,20 @@ namespace teh
 			enum State
 			{
 				WelcomeState,
-				UsernameState,
-				PasswordState,
+				LoginState,
 				LoggedInState,
-				RegisterUsernameState,
-				RegisterPasswordState,
+				PlayingState,
 				ClosingState,
 			};
 			
-			enum Permissions
-			{
-				NoPermissions = 0,
-				UserPermissions = 1,
-				AdminPermissions = 2,
-				RootPermissions = 4,
-			};
-			
+			const static unsigned short int RootPermissions = 65535;
+			const static unsigned short int UserPermissions = 1;
+			const static unsigned short int ServerAdminPermissions = 2;
+			const static unsigned short int ContentAdminPermissions = 4;
+						
 			GameClient(GameConnectionInterface* conn);
+			
+			void generate_challenge();
 			
 			bool has_line();
 			std::string read_line();
@@ -48,13 +47,16 @@ namespace teh
 			std::string username();
 			void username(const std::string& un);
 			
-			GameClient::Permissions permissions();
-			void permissions(const GameClient::Permissions& p);
+			unsigned short int permissions();
+			void permissions(const unsigned short int& p);
+			
+			std::string challenge();
 		private:
 			std::string _username;
 			GameClient::State _state;
-			GameClient::Permissions _permissions;
+			unsigned short int _permissions;
 			GameConnectionInterface* _conn;
+			std::string _challenge;
 	};
 
 	class GameServer
@@ -72,24 +74,35 @@ namespace teh
 			//void close_client(GameClientInterface* client);
 			void close_client(const clientid& id);
 		
+			void init();
+		
 			void start();
 			void finish();
+		
+			GameClient* get_client(const clientid& id);
+		
+			MySQL* sql();
+		
+			bool kill(const std::string& username, const std::string& killer);
+			bool kill(const clientid& id, const std::string& killer);
+		
+			void shutdown(const std::string username);
 		private:
 			//methods
 			void process_line(const clientid& id, const std::string& line);
-		
-			bool try_login(GameClient* client, const std::string& password);
+			
 			bool try_register(GameClient* client, const std::string& password);
 		
 			void update_permissions(GameClient* client);
 		
-			std::string process_root_command(GameClient* client, const std::string& line);
-			std::string process_admin_command(GameClient* client, const std::string& line);
-			std::string process_user_command(GameClient* client, const std::string& line);
+			std::string process_root_command(GameClient* client, const Command& cmd);
+			std::string process_admin_command(GameClient* client, const Command& cmd);
+			std::string process_user_command(GameClient* client, const Command& cmd);
 		
 			std::string greeting(const clientid& id);
 		
 			clientid find_clientid(GameClient* client);
+			clientid find_from_username(const std::string& username);
 		
 			//members
 			std::map<clientid, GameClient*> _clients;

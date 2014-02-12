@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mysql.h>
+
 #include <string>
 
 #include <mysql_driver.h>
@@ -19,13 +21,14 @@ namespace teh
 			~MySQL();
 		
 			bool register_user(const std::string& username, const std::string& password, const unsigned short int& permissions);
-			bool validate_login(const std::string& username, const std::string& password);
+			bool validate_login(const std::string& username, const std::string& challenge, const std::string& challengeresponse);
 			unsigned short int get_permissions(const std::string& username);
 			bool set_permissions(const std::string& username, const unsigned short int& permissions);
 		
 			sql::Connection* connect();
 		private:
-			std::string hash_password(std::string password);
+			std::string hash_sha512(std::string input);
+			std::string to_hex(std::string input);
 			
 			std::string _connectstr;
 			std::string _username;

@@ -3,13 +3,14 @@
 #include <boost/program_options.hpp>
 #include <SFML/System.hpp>
 #include "typedefs.h"
-#include "mysql.h"
 
 namespace teh
 {
 	class NetServer;
 	class GameServer;
-
+	class MySQL;
+	class RPGGame;
+	class CommandParser;
 	class ConsoleConnection;
 	
 	class Application
@@ -22,6 +23,8 @@ namespace teh
 			void finish();
 
 			MySQL* sql();
+			RPGGame* rpg();
+			CommandParser* parser();
 		private:
 			void start_gameserver();
 			void start_netserver();
@@ -30,7 +33,8 @@ namespace teh
 		
 			sf::Thread* _gameserverthread;
 			sf::Thread* _netserverthread;
-			sf::Thread* _consolethread;
+			sf::Thread* _rpggamethread;	
+			sf::Thread* _consolethread;			
 		
 			GameServer* _gameserver;
 			NetServer* _netserver;
@@ -41,5 +45,8 @@ namespace teh
 			sf::Mutex _donemutex;
 
 			MySQL* _mysql;
+			RPGGame* _rpggame;
+		
+			CommandParser* _commandparser;
 	};
 }
