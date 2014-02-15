@@ -78,7 +78,7 @@ namespace teh
 		
 		if (charid != -1)
 		{
-			gc.state(GameClient::PlayingState);
+			gc->state(GameClient::PlayingState);
 			RPGCharacter* character = get_character(charid);
 			_activecharacters[client] = character;
 			return character;

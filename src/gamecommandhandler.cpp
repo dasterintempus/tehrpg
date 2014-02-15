@@ -26,9 +26,22 @@ namespace teh
 						return;
 					}
 					client->username(cmd.arguments[1]);
+					client->state(GameClient::LoginState);
 					client->write_line("Challenge:");
 					client->write_line(client->challenge());
-					client->state(GameClient::LoginState);
+				}
+				else if (first == "su" && cmd.slashed)
+				{
+					if (cmd.client == 0)
+					{
+						client->username("root");
+						client->state(GameClient::LoggedInState);
+						client->write_line("Welcome, root");
+					}
+					else
+					{
+						client->write_line("You are not logged in via console.");
+					}
 				}
 				else
 				{
@@ -156,7 +169,8 @@ namespace teh
 			first == "logout" ||
 			first == "register" ||
 			first == "kill" ||
-			first == "shutdown")
+			first == "shutdown" ||
+			first == "su")
 				return true;
 		}
 		return false;

@@ -42,8 +42,8 @@ CREATE TABLE `Characters` (
 	FOREIGN KEY (`room_id`) REFERENCES `Rooms` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-INSERT INTO `Users` VALUES (NULL, "dasterin", 0x7a3eff4c26e221298cab1d5dfb39ccd7ca8c199291e40c327feae06f91c3bb36e10a618328bf88d91e283bd3d1fe4acc14c2e50ae4b1c51ed754579c6a302173, 65535);
-INSERT INTO `Users` VALUES (NULL, "dasterin1", 0x7a3eff4c26e221298cab1d5dfb39ccd7ca8c199291e40c327feae06f91c3bb36e10a618328bf88d91e283bd3d1fe4acc14c2e50ae4b1c51ed754579c6a302173, 65535);
+INSERT INTO `Users` VALUES (NULL, "root", 0x0, 65535);
+INSERT INTO `Users` VALUES (NULL, "dasterin", 0x7a3eff4c26e221298cab1d5dfb39ccd7ca8c199291e40c327feae06f91c3bb36e10a618328bf88d91e283bd3d1fe4acc14c2e50ae4b1c51ed754579c6a302173, 6);
 INSERT INTO `Rooms` VALUES (NULL, 0,0,0, "A basic and empty room.");
+INSERT INTO `Characters` VALUES (NULL, "root", 10, 10, 10, 10, 10, 10, (SELECT `id` FROM `Users` WHERE `username` = "root" LIMIT 1), (SELECT `id` FROM `Rooms` LIMIT 1));
 INSERT INTO `Characters` VALUES (NULL, "dasterin", 10, 10, 10, 10, 10, 10, (SELECT `id` FROM `Users` WHERE `username` = "dasterin" LIMIT 1), (SELECT `id` FROM `Rooms` LIMIT 1));
-INSERT INTO `Characters` VALUES (NULL, "dasterin1", 10, 10, 10, 10, 10, 10, (SELECT `id` FROM `Users` WHERE `username` = "dasterin1" LIMIT 1), (SELECT `id` FROM `Rooms` LIMIT 1));

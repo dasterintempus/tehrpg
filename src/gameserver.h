@@ -91,13 +91,13 @@ namespace teh
 			//methods
 			void process_line(const clientid& id, const std::string& line);
 			
-			bool try_register(GameClient* client, const std::string& password);
+			//bool try_register(GameClient* client, const std::string& password);
 		
 			void update_permissions(GameClient* client);
 		
-			std::string process_root_command(GameClient* client, const Command& cmd);
-			std::string process_admin_command(GameClient* client, const Command& cmd);
-			std::string process_user_command(GameClient* client, const Command& cmd);
+			//std::string process_root_command(GameClient* client, const Command& cmd);
+			//std::string process_admin_command(GameClient* client, const Command& cmd);
+			//std::string process_user_command(GameClient* client, const Command& cmd);
 		
 			std::string greeting(const clientid& id);
 		

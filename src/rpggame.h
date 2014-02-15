@@ -25,7 +25,7 @@ namespace teh
 		
 			clientid check_logged_in(RPGCharacter* character);
 		
-			RPGCharacter* select_character(const clientid& client, const std::string& username, const std::string& charactername);
+			RPGCharacter* select_character(const clientid& client, const std::string& charactername);
 			RPGCharacter* get_character(int id);
 			RPGCharacter* get_active_character(const clientid& client);
 		

@@ -45,7 +45,6 @@ namespace teh
 				character->say(cmd.arguments[1]);
 			}
 		}
-		else 
 	}
 	
 	bool RPGCommandHandler::accepts_command(const Command& cmd)

@@ -108,9 +108,19 @@ namespace teh
 	clientid GameServer::add_connection(GameConnectionInterface* conn)
 	{
 		sf::Lock clientslock(_clientsmutex);
-		clientid id = _next++;
-		_clients[id] = new GameClient(conn);
-		_clients[id]->write_line(greeting(id));
+		clientid id = 0;
+		if (_next == 0) //Root client
+		{
+			//id remains 0
+			_clients[id] = new GameClient(conn);
+			_clients[id]->write_line(greeting(id));
+		}
+		else
+		{
+			id = _next++;
+			_clients[id] = new GameClient(conn);
+			_clients[id]->write_line(greeting(id));
+		}
 		return id;
 	}
 	
@@ -332,16 +342,19 @@ namespace teh
 		}
 	}*/
 	
+	/*
 	bool GameServer::try_register(GameClient* client, const std::string& password)
 	{
 		return _parent->sql()->register_user(client->username(), password, 1);
 	}
+	*/
 	
 	void GameServer::update_permissions(GameClient* client)
 	{
 		client->permissions(_parent->sql()->get_permissions(client->username()));
 	}
-
+	
+	/*
 	std::string GameServer::process_root_command(GameClient* client, const Command& cmd)
 	{
 		if (cmd.arguments[0] == "shutdown")
@@ -414,6 +427,7 @@ namespace teh
 		}
 		return "Unknown command";
 	}
+	*/
 	
 	std::string GameServer::greeting(const clientid& id)
 	{
