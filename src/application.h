@@ -1,6 +1,5 @@
 #pragma once
 
-#include <boost/program_options.hpp>
 #include <SFML/System.hpp>
 #include "typedefs.h"
 
@@ -16,10 +15,11 @@ namespace teh
 	class Application
 	{
 		public:
-			Application(int argc, char** argv);
+			Application();
 			~Application();
 		
-			void start();
+      int init(int argc, char** argv);
+			int start(int argc, char** argv);
 			void finish();
 
 			MySQL* sql();
@@ -28,8 +28,6 @@ namespace teh
 		private:
 			void start_gameserver();
 			void start_netserver();
-		
-			boost::program_options::variables_map _cliargs;
 		
 			sf::Thread* _gameserverthread;
 			sf::Thread* _netserverthread;

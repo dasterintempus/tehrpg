@@ -1,4 +1,5 @@
 import os
+import os.path
 
 if "mysql-rebuild" not in COMMAND_LINE_TARGETS:
 	if "LD_LIBRARY_PATH" in os.environ:
@@ -7,7 +8,7 @@ if "mysql-rebuild" not in COMMAND_LINE_TARGETS:
 		os.environ["LD_LIBRARY_PATH"] = "/home/dasterin/lib"
 else:
 	if "gdb" in COMMAND_LINE_TARGETS or "run" in COMMAND_LINE_TARGETS:
-		print "Cannot rebuild MySQL and also run/gdb due to LD_LIBRARY_PATH"
+		print "Cannot rebuild MySQL database and also run/gdb due to LD_LIBRARY_PATH"
 		Exit(1)
 
 env = Environment(ENV = os.environ)
@@ -25,24 +26,26 @@ else:
 
 buildpath = os.path.join("build", env["MODE"], "tehrpg")
 
-includedirs = ["/home/dasterin/include"]
+includedirs = []
+includedirs = [os.path.expanduser("~/include"), os.path.expanduser("~/Qt/include")]
+env.Append(CXXFLAGS="-fPIC")
+env.Append(CPPPATH = includedirs)
 
-for includedir in includedirs:
-	env.Append(CXXFLAGS = "-I" + includedir)
-
-libdirs = ["/home/dasterin/lib"]
+libdirs = []
+libdirs = [os.path.expanduser("~/lib"), os.path.expanduser("~/Qt/lib")]
 env.Append(LIBPATH = libdirs)
-
-libs = ["cryptopp", "mysqlcppconn-static", "boost_program_options", "sfml-system", "sfml-network"]
-env.Append(LIBS = libs)
-
-env.ParseConfig("mysql_config --libs")
 
 if env["MODE"] == "debug":
 	env.Append(CXXFLAGS = "-ggdb")
 	env.Append(CXXFLAGS = "-O0")
+	env.Append(CXXFLAGS = "-DTEHDEBUG")
 elif env["MODE"] == "release":
 	env.Append(CXXFLAGS = "-O3")
+
+env.ParseConfig("mysql_config --libs")
+
+libs = ["cryptopp", "mysqlcppconn-static", "sfml-system", "sfml-network"]
+env.Append(LIBS = libs)
 
 sources = Glob("src/*.cpp")
 server = env.Program(target=buildpath, source=sources)

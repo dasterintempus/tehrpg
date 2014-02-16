@@ -20,32 +20,7 @@ namespace teh
 		_consoleconnection(0),
 		_mysql(0)
 	{
-		srand(time(0));
 		
-		boost::program_options::options_description desc("Allowed Options");
-		desc.add_options()
-			("help", "produce help message")
-			("verbosity,v", boost::program_options::value<unsigned short int>(), "Set verbosity")
-			("port", boost::program_options::value<unsigned short int>()->default_value(3137), "Port to listen on")
-		;
-		
-		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), _cliargs);
-		boost::program_options::notify(_cliargs);
-		
-		_gameserver = new GameServer(this);
-		_gameserverthread = new sf::Thread(&Application::start_gameserver, this);
-		_netserver = new NetServer(_cliargs["port"].as<unsigned short int>(), _gameserver);
-		_netserverthread = new sf::Thread(&Application::start_netserver, this);
-		
-		_consoleconnection = new ConsoleConnection();
-		_consolethread = new sf::Thread(&ConsoleConnection::start, _consoleconnection);
-
-		_mysql = new MySQL("localhost", 3306, "tehrpg", "tur7tle", "tehrpg");
-		
-		_rpggame = new RPGGame(this, _gameserver);
-		_rpggamethread = new sf::Thread(&RPGGame::start, _rpggame);
-		
-		_commandparser = new CommandParser();
 	}
 	
 	Application::~Application()
@@ -70,8 +45,51 @@ namespace teh
 			delete _rpggamethread;
 	}
 	
-	void Application::start()
+  int Application::init(int argc, char** argv)
+  {
+    srand(time(0));
+		
+    short int port = 3137;
+    if (argc >= 2)
+    {
+      std::string portstr = argv[1];
+      if (is_numeric<short int>(portstr))
+      {
+        port = to_numeric<short int>(portstr);
+      }
+      else
+      {
+        std::cerr << "Invalid port specified. (not a number?)" << std::endl;
+        return 2;
+      }
+    }
+		
+		_gameserver = new GameServer(this);
+		_gameserverthread = new sf::Thread(&Application::start_gameserver, this);
+		_netserver = new NetServer(_cliargs["port"].as<unsigned short int>(), _gameserver);
+		_netserverthread = new sf::Thread(&Application::start_netserver, this);
+		
+		_consoleconnection = new ConsoleConnection();
+		_consolethread = new sf::Thread(&ConsoleConnection::start, _consoleconnection);
+
+		_mysql = new MySQL("localhost", 3306, "tehrpg", "tur7tle", "tehrpg");
+		
+		_rpggame = new RPGGame(this, _gameserver);
+		_rpggamethread = new sf::Thread(&RPGGame::start, _rpggame);
+		
+		_commandparser = new CommandParser();
+    
+    return 0;
+  }
+  
+	int Application::start(int argc, char** argv)
 	{
+    int result = init(argc, argv);
+    if (result != 0)
+    {
+      return result;
+    }
+  
 		_gameserverthread->launch();
 		_gameserver->add_connection(_consoleconnection);
 		_consolethread->launch();
@@ -108,6 +126,8 @@ namespace teh
 		
 		_rpggame->finish();
 		_rpggamethread->wait();
+    
+    return 0;
 	}
 	
 	void Application::finish()
