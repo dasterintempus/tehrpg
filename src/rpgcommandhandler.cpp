@@ -21,77 +21,22 @@ namespace teh
 		std::string first = cmd.arguments[0];
 		if (first == "select" && cmd.slashed && !character)
 		{
-			if (cmd.arguments.size() != 2)
-			{
-				_parent->message_client(cmd.client, "Invalid usage of select command\nUsage: /select {charactername}");
-			}
-			else
-			{
-				if (_parent->check_logged_in(cmd.arguments[1]) == -1)
-				{
-					if (_parent->select_character(cmd.client, cmd.arguments[1]))
-					{
-						_parent->message_client(cmd.client, "Selected character: " + cmd.arguments[1]);
-					}
-					else
-					{
-						_parent->message_client(cmd.client, "Unable to find that character on your account.");
-					}
-				}
-				else
-				{
-					//This should be impossible, as users can only login once. Planning for a future possibility.
-					_parent->message_client(cmd.client, "Character is already logged in.");
-				}
-			}
+			cmd_select(cmd);
 			return;
 		}
-		
-		if (first == "listchars" && cmd.slashed && !character)
+		else if (first == "listchars" && cmd.slashed)
 		{
-			stringvector charnames = _parent->character_names(cmd.client);
-			_parent->message_client(cmd.client, "Characters:");
-			for (unsigned int n = 0;n < charnames.size();n++)
-			{
-				_parent->message_client(cmd.client, charnames[n]);
-			}
-			_parent->message_client(cmd.client, "---");
+			cmd_listchars(cmd);
 			return;
 		}
-		
-		if (first == "addroom" && cmd.slashed)
+		else if (first == "addroom" && cmd.slashed)
 		{
-			GameClient* gc = _parent->get_client(cmd.client);
-			std::cerr << "client perms: " << gc->permissions() << std::endl;
-			std::cerr << "needed perms: " << GameClient::ContentAdminPermissions << std::endl;
-			if ((gc->permissions() & GameClient::ContentAdminPermissions) == GameClient::ContentAdminPermissions)
-			{
-				if (cmd.arguments.size() == 5 && is_numeric<long int>(cmd.arguments[1]) && is_numeric<long int>(cmd.arguments[2]) && is_numeric<short int>(cmd.arguments[3]))
-				{
-					long int x = to_numeric<long int>(cmd.arguments[1]);
-					long int y = to_numeric<long int>(cmd.arguments[2]);
-					short int z = to_numeric<short int>(cmd.arguments[3]);
-					std::string description = cmd.arguments[4];
-					RPGRoom* room = RPGRoom::build(_parent, x, y, z, description);
-					if (room)
-					{
-						_parent->message_client(cmd.client, "Room created.");
-					}
-					else
-					{
-						_parent->message_client(cmd.client, "Error creating room.");
-					}
-				}
-				else
-				{
-					_parent->message_client(cmd.client, "Invalid arguments for /addroom.");
-					_parent->message_client(cmd.client, "Usage: /addroom {x} {y} {z} {description}");
-				}
-			}
-			else
-			{
-				_parent->message_client(cmd.client, "Insufficient permissions.");
-			}
+			cmd_addroom(cmd);
+			return;
+		}
+		else if (first == "makechar" && cmd.slashed && !character)
+		{
+			cmd_makechar(cmd);
 			return;
 		}
 		
@@ -100,78 +45,18 @@ namespace teh
 		
 		if (first == "say")
 		{
-			if (cmd.arguments.size() != 2)
-			{
-				_parent->message_client(cmd.client, "Invalid usage of say command (use double quotes)");
-			}
-			else
-			{
-				character->say(cmd.arguments[1]);
-			}
+			cmd_say(cmd);
+			return;
 		}
 		else if (first == "where")
 		{
-			RPGRoom* location = character->get_location();
-			if (!location)
-			{
-				_parent->message_client(cmd.client, "Error! You are nowhere.");
-			}
-			else
-			{
-				std::stringstream sstream;
-				sstream << "You are at X: " << location->xpos() << " Y: " << location->ypos() << " Z: " << location->zpos();
-				_parent->message_client(cmd.client, sstream.str());
-			}
+			cmd_where(cmd);
+			return;
 		}
 		else if (first == "move")
 		{
-			RPGRoom* destination = 0;
-			if (cmd.arguments.size() != 2)
-			{
-				_parent->message_client(cmd.client, "Invalid usage of move command.");
-				_parent->message_client(cmd.client, "Usage: move {up|down|east|west|north|south}");
-				return;
-			}
-			else if (cmd.arguments[1] == "up")
-			{
-				destination = character->move(2, -1);
-			}
-			else if (cmd.arguments[1] == "down")
-			{
-				destination = character->move(2, 1);
-			}
-			else if (cmd.arguments[1] == "east")
-			{
-				destination = character->move(0, -1);
-			}
-			else if (cmd.arguments[1] == "west")
-			{
-				destination = character->move(0, 1);
-			}
-			else if (cmd.arguments[1] == "north")
-			{
-				destination = character->move(1, -1);
-			}
-			else if (cmd.arguments[1] == "south")
-			{
-				destination = character->move(0, 1);
-			}
-			else
-			{
-				_parent->message_client(cmd.client, "Invalid usage of move command.");
-				_parent->message_client(cmd.client, "Usage: move {up|down|east|west|north|south}");
-				return;
-			}
-			
-			if (destination)
-			{
-				_parent->message_client(cmd.client, "Moved " + cmd.arguments[1]);
-				_parent->message_client(cmd.client, "You are in: " + destination->description());
-			}
-			else
-			{
-				_parent->message_client(cmd.client, "Unable to move that direction right now. (Room does not exist)");
-			}
+			cmd_move(cmd);
+			return;
 		}
 	}
 	
@@ -189,9 +74,276 @@ namespace teh
 		{
 			if (first == "select" ||
 				first == "listchars" ||
-				first == "addroom")
+				first == "addroom" ||
+				first == "makechar")
 				return true;
 		}
 		return false;
+	}
+	
+	void RPGCommandHandler::cmd_select(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (character)
+		{
+			_parent->message_client(cmd.client, "You are already playing as " + character->name());
+			return;
+		}
+		
+		if (cmd.arguments.size() != 2)
+		{
+			_parent->message_client(cmd.client, "Invalid usage of select command\nUsage: /select {charactername}");
+		}
+		else
+		{
+			if (_parent->check_logged_in(cmd.arguments[1]) == -1)
+			{
+				if (_parent->select_character(cmd.client, cmd.arguments[1]))
+				{
+					_parent->message_client(cmd.client, "Selected character: " + cmd.arguments[1]);
+				}
+				else
+				{
+					_parent->message_client(cmd.client, "Unable to find that character on your account.");
+				}
+			}
+			else
+			{
+				//This should be impossible, as users can only login once. Planning for a future possibility.
+				_parent->message_client(cmd.client, "Character is already logged in.");
+			}
+		}
+	}
+	
+	void RPGCommandHandler::cmd_listchars(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		
+		stringvector charnames = _parent->character_names(cmd.client);
+		_parent->message_client(cmd.client, "Characters:");
+		for (unsigned int n = 0;n < charnames.size();n++)
+		{
+			if (character && character->name() == charnames[n])
+			{
+				_parent->message_client(cmd.client, "*" + charnames[n]);
+			}
+			else
+			{
+				_parent->message_client(cmd.client, charnames[n]);
+			}
+		}
+		_parent->message_client(cmd.client, "---");
+	}
+	
+	void RPGCommandHandler::cmd_addroom(const Command& cmd)
+	{
+		GameClient* gc = _parent->get_client(cmd.client);
+		if (!gc)
+			return;
+		
+		if ((gc->permissions() & GameClient::ContentAdminPermissions) == GameClient::ContentAdminPermissions)
+		{
+			if (cmd.arguments.size() == 5 && is_numeric<long int>(cmd.arguments[1]) && is_numeric<long int>(cmd.arguments[2]) && is_numeric<short int>(cmd.arguments[3]))
+			{
+				long int x = to_numeric<long int>(cmd.arguments[1]);
+				long int y = to_numeric<long int>(cmd.arguments[2]);
+				short int z = to_numeric<short int>(cmd.arguments[3]);
+				std::string description = cmd.arguments[4];
+				RPGRoom* room = RPGRoom::build(_parent, x, y, z, description);
+				if (room)
+				{
+					_parent->message_client(cmd.client, "Room created.");
+				}
+				else
+				{
+					_parent->message_client(cmd.client, "Error creating room.");
+				}
+			}
+			else
+			{
+				_parent->message_client(cmd.client, "Invalid arguments for /addroom.");
+				_parent->message_client(cmd.client, "Usage: /addroom {x} {y} {z} {description}");
+			}
+		}
+		else
+		{
+			_parent->message_client(cmd.client, "Insufficient permissions.");
+		}
+	}
+	
+	void RPGCommandHandler::cmd_makechar(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (character)
+			return;
+		
+		GameClient* gc = _parent->get_client(cmd.client);
+		if (!gc)
+			return;
+		
+		std::string username = gc->username();
+		
+		if (cmd.arguments.size() != 2 && cmd.arguments.size() != 4)
+		{
+			_parent->message_client(cmd.client, "Invalid usage of /makechar command.");
+			_parent->message_client(cmd.client, "Usage: /makechar {name} [+{stat} -{stat}]");
+			return;
+		}
+		
+		std::string charname = cmd.arguments[1];
+		
+		std::map<std::string, unsigned short int> stats;
+		for (unsigned int n = 0;n < 6;n++)
+		{
+			stats[RPGCharacter::StatNames[n]] = 10;
+		}
+		
+		if (cmd.arguments.size() == 4)
+		{
+			if (cmd.arguments[2][0] != '+' || cmd.arguments[3][0] != '-')
+			{
+				_parent->message_client(cmd.client, "Invalid usage of /makechar command.");
+				_parent->message_client(cmd.client, "Usage: /makechar {name} [+{stat} -{stat}]");
+				return;
+			}
+			std::string upstat = cmd.arguments[2].substr(1);
+			std::string downstat = cmd.arguments[3].substr(1);
+			std::string upstatreal;
+			std::string downstatreal;
+			for (unsigned int n = 0;n < 6;n++)
+			{
+				std::string statname = RPGCharacter::StatNames[n];
+				if (statname.substr(0, upstat.size()) == upstat)
+				{
+					upstatreal = statname;
+				}
+				if (statname.substr(0, downstat.size()) == downstat)
+				{
+					downstatreal = statname;
+				}
+			}
+			if (upstatreal == "" || downstatreal == "")
+			{
+				_parent->message_client(cmd.client, "Unable to match stat names.");
+				_parent->message_client(cmd.client, "Invalid usage of /makechar command.");
+				_parent->message_client(cmd.client, "Usage: /makechar {name} [+{stat} -{stat}]");
+				return;
+			}
+			
+			if (upstatreal == downstatreal)
+			{
+				_parent->message_client(cmd.client, "You can't boost and lower the same stat.");
+				_parent->message_client(cmd.client, "Invalid usage of /makechar command.");
+				_parent->message_client(cmd.client, "Usage: /makechar {name} [+{stat} -{stat}]");
+				return;
+			}
+			
+			stats[upstatreal] += 2;
+			stats[downstatreal] -= 2;
+		}
+		
+		RPGRoom* room = _parent->get_room(1);
+		
+		character = RPGCharacter::build(_parent, charname, username, room, stats);
+		if (character)
+		{
+			_parent->message_client(cmd.client, "Character created.");
+			return;
+		}
+		else
+		{
+			_parent->message_client(cmd.client, "Unable to create character (name taken?)");
+			return;
+		}
+	}
+
+	void RPGCommandHandler::cmd_say(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		if (cmd.arguments.size() != 2)
+		{
+			_parent->message_client(cmd.client, "Invalid usage of say command (use double quotes)");
+		}
+		else
+		{
+			character->say(cmd.arguments[1]);
+		}
+	}
+	
+	void RPGCommandHandler::cmd_where(const Command& cmd)
+	{	
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		RPGRoom* location = character->get_location();
+		if (!location)
+		{
+			_parent->message_client(cmd.client, "Error! You are nowhere.");
+		}
+		else
+		{
+			std::stringstream sstream;
+			sstream << "You are at X: " << location->xpos() << " Y: " << location->ypos() << " Z: " << location->zpos();
+			_parent->message_client(cmd.client, sstream.str());
+		}
+	}
+	
+	void RPGCommandHandler::cmd_move(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		RPGRoom* destination = 0;
+		if (cmd.arguments.size() != 2)
+		{
+			_parent->message_client(cmd.client, "Invalid usage of move command.");
+			_parent->message_client(cmd.client, "Usage: move {up|down|east|west|north|south}");
+			return;
+		}
+		else if (cmd.arguments[1] == "up")
+		{
+			destination = character->move(2, -1);
+		}
+		else if (cmd.arguments[1] == "down")
+		{
+			destination = character->move(2, 1);
+		}
+		else if (cmd.arguments[1] == "east")
+		{
+			destination = character->move(0, -1);
+		}
+		else if (cmd.arguments[1] == "west")
+		{
+			destination = character->move(0, 1);
+		}
+		else if (cmd.arguments[1] == "north")
+		{
+			destination = character->move(1, -1);
+		}
+		else if (cmd.arguments[1] == "south")
+		{
+			destination = character->move(0, 1);
+		}
+		else
+		{
+			_parent->message_client(cmd.client, "Invalid usage of move command.");
+			_parent->message_client(cmd.client, "Usage: move {up|down|east|west|north|south}");
+			return;
+		}
+		
+		if (destination)
+		{
+			_parent->message_client(cmd.client, "Moved " + cmd.arguments[1]);
+			_parent->message_client(cmd.client, "You are in: " + destination->description());
+		}
+		else
+		{
+			_parent->message_client(cmd.client, "Unable to move that direction right now. (Room does not exist)");
+		}
 	}
 }

@@ -44,21 +44,34 @@ namespace teh
 	
 	clientid RPGGame::check_logged_in(const std::string& charactername)
 	{
+		clientid remove = -1;
 		for (std::map<clientid, RPGCharacter*>::iterator i = _activecharacters.begin(); i != _activecharacters.end(); i++)
 		{
 			if (charactername == (*i).second->name())
-				return (*i).first;
+			{
+				GameClient* gc = _server->get_client((*i).first);
+				if (gc)
+				{
+					return (*i).first;
+				}
+				else
+				{
+					remove = (*i).first;
+					break;
+				}
+			}
+		}
+		if (remove != -1)
+		{
+			_activecharacters.erase(remove);
 		}
 		return -1;
 	}
 	
 	clientid RPGGame::check_logged_in(RPGCharacter* character)
 	{
-		for (std::map<clientid, RPGCharacter*>::iterator i = _activecharacters.begin(); i != _activecharacters.end(); i++)
-		{
-			if (character == (*i).second)
-				return (*i).first;
-		}
+		if (character)
+			return check_logged_in(character->name());
 		return -1;
 	}
 			

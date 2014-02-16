@@ -212,6 +212,7 @@ namespace teh
 		sf::Socket::Status listenstatus;
 		do
 		{
+			_listener.set_reuse();
 			listenstatus = _listener.listen(_port);
 			sf::sleep(sf::seconds(1));
 		} while (listenstatus != sf::Socket::Done);

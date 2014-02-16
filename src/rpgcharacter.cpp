@@ -9,7 +9,7 @@ namespace teh
 	
 	RPGCharacter* RPGCharacter::build(RPGGame* parent, const std::string& name, const std::string& username, RPGRoom* room, const std::map<std::string, unsigned short int>& stats)
 	{
-		for (unsigned int n=0;n < sizeof(StatNames);n++)
+		for (unsigned int n=0;n < 6;n++)
 		{
 			if (stats.count(StatNames[n]) == 0)
 			{
@@ -19,7 +19,7 @@ namespace teh
 		
 		sql::Connection* conn = parent->sql()->connect();
 		
-		sql::PreparedStatement* prep_stmt = conn->prepareStatement("INSERT INTO `Characters` VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT `id` FROM `Users` WHERE `username` = ? LIMIT 1), ?)");
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("INSERT INTO `Characters` VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, (SELECT `id` FROM `Users` WHERE `username` = ? LIMIT 1), ?)");
 		prep_stmt->setString(1, name);
 		prep_stmt->setUInt(2, stats.at("strength"));
 		prep_stmt->setUInt(3, stats.at("constitution"));
@@ -130,7 +130,7 @@ namespace teh
 	
 	void RPGCharacter::say(const std::string& msg)
 	{
-		get_location()->broadcast(_name + " says: " + msg);
+		get_location()->broadcast(_name + " says: \"" + msg + "\"");
 	}
 	
 	RPGRoom* RPGCharacter::move(const unsigned short int& axis, const short int& delta)
