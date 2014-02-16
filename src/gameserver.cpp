@@ -1,5 +1,6 @@
 #include "gameserver.h"
 #include <sstream>
+
 #include "application.h"
 #include "mysql.h"
 #include "rpggame.h"
@@ -181,6 +182,28 @@ namespace teh
 		_done = true;
 	}
 	
+	clientid GameServer::find_clientid(GameClient* client)
+	{
+		sf::Lock clientslock(_clientsmutex);
+		for (std::map<clientid, GameClient*>::const_iterator i = _clients.begin();i != _clients.end(); i++)
+		{
+			if ((*i).second == client)
+				return (*i).first;
+		}
+		return -1;
+	}
+	
+	clientid GameServer::find_from_username(const std::string& username)
+	{
+		sf::Lock clientslock(_clientsmutex);
+		for (std::map<clientid, GameClient*>::const_iterator i = _clients.begin();i != _clients.end(); i++)
+		{
+			if ((*i).second->username() == username && (*i).second->state() != GameClient::LoginState)
+				return (*i).first;
+		}
+		return -1;
+	}
+	
 	GameClient* GameServer::get_client(const clientid& id)
 	{
 		if (_clients.count(id))
@@ -216,6 +239,11 @@ namespace teh
 		_parent->finish();
 	}
 	
+	void GameServer::update_permissions(GameClient* client)
+	{
+		client->permissions(_parent->sql()->get_permissions(client->username()));
+	}
+	
 	void GameServer::process_line(const clientid& id, const std::string& line)
 	{
 		if (_clients.count(id) == 0)
@@ -224,240 +252,11 @@ namespace teh
 		_parent->parser()->parse(line, id);
 	}
 	
-	/*void GameServer::process_line(const clientid& id, const std::string& line)
-	{
-		if (_clients.count(id) == 0)
-			return;
-		
-		GameClient* client = _clients[id];
-		
-		GameClient::State state = client->state();
-		bool login = false;
-		Command cmd = CommandLexer::lex(line, id);
-		switch (state)
-		{
-			case GameClient::WelcomeState:
-				if (cmd.slashed && cmd.arguments.size() > 0)
-				{
-					if (cmd.arguments[0] == "login")
-					{
-						client->write_line("Logging in!");
-						client->write_line("Username: ");
-						client->state(GameClient::UsernameState);
-					}
-					else if (cmd.arguments[0] == "register")
-					{
-						client->write_line("Registering!");
-						client->write_line("Username: ");
-						client->state(GameClient::RegisterUsernameState);
-					}
-					else if (cmd.arguments[0] == "login")
-					{
-						client->close();
-					}
-				}
-				else
-				{
-					client->write_line("Invalid command: " + line);
-				}
-				break;
-			case GameClient::UsernameState:
-				client->username(line);
-				client->write_line("Password: ");
-				client->state(GameClient::PasswordState);
-				break;
-			case GameClient::PasswordState:
-				login = try_login(client, line);
-				if (login)
-				{
-					client->write_line("Logged in!");
-					client->state(GameClient::LoggedInState);
-					update_permissions(client);
-				}
-				else
-				{
-					client->write_line("Incorrect username/password");
-					client->state(GameClient::WelcomeState);
-				}
-				break;
-			case GameClient::LoggedInState:
-				if (cmd.slashed && cmd.arguments.size() > 0)
-				{
-					if (client->permissions() & GameClient::RootPermissions)
-					{
-						client->write_line(process_root_command(client, cmd));
-					}
-					else if (client->permissions() & GameClient::ServerAdminPermissions)
-					{
-						client->write_line(process_admin_command(client, cmd));
-					}
-					else
-					{
-						client->write_line(process_user_command(client, cmd));
-					}
-				}
-				else
-				{
-					client->write_line("Echo: " + line);
-				}
-				break;
-			case GameClient::RegisterUsernameState:
-				client->username(line);
-				client->write_line("Password: ");
-				client->state(GameClient::RegisterPasswordState);
-				break;
-			case GameClient::RegisterPasswordState:
-				if (try_register(client, line))
-				{
-					client->write_line("Registered! (and logged in)");
-					client->state(GameClient::LoggedInState);
-					update_permissions(client);
-				}
-				else
-				{
-					client->write_line("Invalid or in-use Username");
-					client->state(GameClient::WelcomeState);
-				}
-				break;
-			case GameClient::PlayingState:
-				if (cmd.slashed && cmd.arguments.size() > 0)
-				{
-					if (client->permissions() & GameClient::RootPermissions)
-					{
-						client->write_line(process_root_command(client, cmd));
-					}
-					else if (client->permissions() & GameClient::ServerAdminPermissions)
-					{
-						client->write_line(process_admin_command(client, cmd));
-					}
-					else
-					{
-						client->write_line(process_user_command(client, cmd));
-					}
-				}
-				else
-				{
-					client->write_line("You say: " + line);
-				}
-			default:
-				break;
-		}
-	}*/
-	
-	/*
-	bool GameServer::try_register(GameClient* client, const std::string& password)
-	{
-		return _parent->sql()->register_user(client->username(), password, 1);
-	}
-	*/
-	
-	void GameServer::update_permissions(GameClient* client)
-	{
-		client->permissions(_parent->sql()->get_permissions(client->username()));
-	}
-	
-	/*
-	std::string GameServer::process_root_command(GameClient* client, const Command& cmd)
-	{
-		if (cmd.arguments[0] == "shutdown")
-		{
-			_parent->finish();
-			return "Shutting down";
-		}
-		return process_admin_command(client, cmd);
-	}
-	
-	std::string GameServer::process_admin_command(GameClient* client, const Command& cmd)
-	{
-		if (cmd.arguments[0] == "kill")
-		{
-			if (cmd.arguments.size() != 3)
-			{
-				return "Invalid number of arguments for kill command.\nUsage: /kill {id|user} {target}";
-			}
-			if (cmd.arguments[1] == "id")
-			{
-				std::stringstream conv;
-				conv << cmd.arguments[2];
-				clientid killid;
-				conv >> killid;
-				if (killid != 0 && _clients.count(killid))
-				{
-					_clients[killid]->close();
-					return "Killed #" + conv.str();
-				}
-				return "Couldn't find #" + conv.str();
-			}
-			else if (cmd.arguments[1] == "user")
-			{
-				std::string username = cmd.arguments[2];
-				clientid killid = find_from_username(username);
-				if (killid != 0 && _clients.count(killid))
-				{
-					_clients[killid]->close();
-					return "Killed " + username;
-				}
-				return "Couldn't find " + username;
-			}
-			else
-			{
-				return "Invalid argument for kill command.\nUsage: /kill {id|user} {target}";
-			}
-		}
-		return process_user_command(client, cmd);
-	}
-	
-	std::string GameServer::process_user_command(GameClient* client, const Command& cmd)
-	{
-		if (cmd.arguments[0] == "logout")
-		{
-			client->state(GameClient::WelcomeState);
-			return "Logged out.";
-		}
-		else if (cmd.arguments[0] == "select")
-		{
-			if (cmd.arguments.size() != 2)
-			{
-				return "Incorrect number of commands for select command.\nUsage: /select {charactername}";
-			}
-			std::string charactername = cmd.arguments[1];
-			if (_parent->rpg()->select_character(find_clientid(client), client->username(), charactername))
-			{
-				client->state(GameClient::PlayingState);
-				return "Now Playing: " + charactername;
-			}
-		}
-		return "Unknown command";
-	}
-	*/
-	
 	std::string GameServer::greeting(const clientid& id)
 	{
 		std::stringstream strstream;
 		strstream << "Welcome client #" << id;
 		return strstream.str();
-	}
-	
-	clientid GameServer::find_clientid(GameClient* client)
-	{
-		sf::Lock clientslock(_clientsmutex);
-		for (std::map<clientid, GameClient*>::const_iterator i = _clients.begin();i != _clients.end(); i++)
-		{
-			if ((*i).second == client)
-				return (*i).first;
-		}
-		return -1;
-	}
-	
-	clientid GameServer::find_from_username(const std::string& username)
-	{
-		sf::Lock clientslock(_clientsmutex);
-		for (std::map<clientid, GameClient*>::const_iterator i = _clients.begin();i != _clients.end(); i++)
-		{
-			if ((*i).second->username() == username && (*i).second->state() != GameClient::LoginState)
-				return (*i).first;
-		}
-		return -1;
 	}
 	
 }

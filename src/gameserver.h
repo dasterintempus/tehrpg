@@ -25,10 +25,10 @@ namespace teh
 				ClosingState,
 			};
 			
-			const static unsigned short int RootPermissions = 65535;
-			const static unsigned short int UserPermissions = 1;
-			const static unsigned short int ServerAdminPermissions = 2;
-			const static unsigned short int ContentAdminPermissions = 4;
+			const static unsigned short int RootPermissions = 0b111111111111111;
+			const static unsigned short int UserPermissions = 0b1;
+			const static unsigned short int ServerAdminPermissions = 0b10;
+			const static unsigned short int ContentAdminPermissions = 0b100;
 						
 			GameClient(GameConnectionInterface* conn);
 			
@@ -79,6 +79,8 @@ namespace teh
 			void start();
 			void finish();
 		
+			clientid find_clientid(GameClient* client);
+			clientid find_from_username(const std::string& username);
 			GameClient* get_client(const clientid& id);
 		
 			MySQL* sql();
@@ -87,22 +89,13 @@ namespace teh
 			bool kill(const clientid& id, const std::string& killer);
 		
 			void shutdown(const std::string username);
+			
+			void update_permissions(GameClient* client);
 		private:
 			//methods
 			void process_line(const clientid& id, const std::string& line);
-			
-			//bool try_register(GameClient* client, const std::string& password);
-		
-			void update_permissions(GameClient* client);
-		
-			//std::string process_root_command(GameClient* client, const Command& cmd);
-			//std::string process_admin_command(GameClient* client, const Command& cmd);
-			//std::string process_user_command(GameClient* client, const Command& cmd);
-		
 			std::string greeting(const clientid& id);
-		
-			clientid find_clientid(GameClient* client);
-			clientid find_from_username(const std::string& username);
+			
 		
 			//members
 			std::map<clientid, GameClient*> _clients;

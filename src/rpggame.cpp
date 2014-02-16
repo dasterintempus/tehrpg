@@ -42,6 +42,16 @@ namespace teh
 		
 	}
 	
+	clientid RPGGame::check_logged_in(const std::string& charactername)
+	{
+		for (std::map<clientid, RPGCharacter*>::iterator i = _activecharacters.begin(); i != _activecharacters.end(); i++)
+		{
+			if (charactername == (*i).second->name())
+				return (*i).first;
+		}
+		return -1;
+	}
+	
 	clientid RPGGame::check_logged_in(RPGCharacter* character)
 	{
 		for (std::map<clientid, RPGCharacter*>::iterator i = _activecharacters.begin(); i != _activecharacters.end(); i++)
@@ -78,10 +88,13 @@ namespace teh
 		
 		if (charid != -1)
 		{
-			gc->state(GameClient::PlayingState);
 			RPGCharacter* character = get_character(charid);
-			_activecharacters[client] = character;
-			return character;
+			if (check_logged_in(character) == -1)
+			{
+				gc->state(GameClient::PlayingState);
+				_activecharacters[client] = character;
+				return character;
+			}
 		}
 		
 		return 0;
@@ -116,6 +129,31 @@ namespace teh
 		return 0;
 	}
 	
+	stringvector RPGGame::character_names(const clientid& client)
+	{
+		stringvector out;
+		GameClient* gc = _server->get_client(client);
+		if (!gc)
+			return out;
+		
+		std::string username = gc->username();
+		
+		sql::Connection* conn = sql()->connect();
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Characters`.`name` FROM `Characters` JOIN `Users` WHERE `Characters`.`user_id` = `Users`.`id` AND `Users`.`username` = ?");
+		prep_stmt->setString(1, username.c_str());
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		
+		while (res->next())
+		{
+			out.push_back(res->getString(1));
+		}
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
+		return out;
+	}
+	
 	RPGRoom* RPGGame::get_room(int id)
 	{
 		if (_rooms.count(id) == 0)
@@ -125,7 +163,7 @@ namespace teh
 			prep_stmt->setInt(1, id);
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
-			{				
+			{
 				_rooms[id] = new RPGRoom(id, this);
 			}
 			else
@@ -136,9 +174,40 @@ namespace teh
 		return _rooms[id];
 	}
 	
-	void RPGGame::locate_room(long int x, long int y, short int z, RPGRoom* room)
+	void RPGGame::locate_room(const long int& xpos, const long int& ypos, const short int& zpos, RPGRoom* room)
 	{
-		_roomscoords[x][y][z] = room;
+		_roomscoords[xpos][ypos][zpos] = room;
+	}
+	
+	RPGRoom* RPGGame::find_room(const long int& xpos, const long int& ypos, const short int& zpos)
+	{
+		if (!RPGGame::valid_coord(xpos, ypos, zpos))
+			return 0;
+		
+		if (_roomscoords.count(xpos))
+		{
+			if (_roomscoords[xpos].count(ypos))
+			{
+				if (_roomscoords[xpos][ypos].count(zpos))
+				{
+					return _roomscoords[xpos][ypos][zpos];
+				}
+			}
+		}
+		
+		sql::Connection* conn = sql()->connect();
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Rooms` WHERE `xpos` = ? AND `ypos` = ? AND `zpos` = ?");
+		prep_stmt->setInt(1, xpos);
+		prep_stmt->setInt(2, ypos);
+		prep_stmt->setInt(3, zpos);
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		if (res->rowsCount() == 1)
+		{
+			res->next();
+			unsigned int id = res->getInt(1);
+			return get_room(id);
+		}
+		return 0;
 	}
 	
 	MySQL* RPGGame::sql()
@@ -151,5 +220,45 @@ namespace teh
 		GameClient* gc = _server->get_client(client);
 		if (gc)
 			gc->write_line(message);
+	}
+	
+	GameClient* RPGGame::get_client(const clientid& client)
+	{
+		return _server->get_client(client);
+	}
+	
+	bool RPGGame::valid_coord(const long int& xpos, const long int& ypos, const short int& zpos)
+	{
+		if (xpos < 0)
+		{
+			if (xpos < -RPGGame::WorldXSize)
+				return false;
+		}
+		else
+		{
+			if (xpos >= RPGGame::WorldXSize)
+				return false;
+		}
+		if (ypos < 0)
+		{
+			if (ypos < -RPGGame::WorldYSize)
+				return false;
+		}
+		else
+		{
+			if (ypos >= RPGGame::WorldYSize)
+				return false;
+		}
+		if (zpos < 0)
+		{
+			if (zpos < -RPGGame::WorldZSize)
+				return false;
+		}
+		else
+		{
+			if (zpos >= RPGGame::WorldZSize)
+				return false;
+		}
+		return true;
 	}
 }

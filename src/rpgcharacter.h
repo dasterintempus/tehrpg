@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <map>
 
 namespace teh
 {	
@@ -10,6 +11,9 @@ namespace teh
 	class RPGCharacter
 	{
 		public:
+			const static std::string StatNames[6];
+			static RPGCharacter* build(RPGGame* parent, const std::string& name, const std::string& username, RPGRoom* room, const std::map<std::string, unsigned short int>& stats);	
+		
 			RPGCharacter(int id, RPGGame* parent);
 		
 			unsigned short int strength();
@@ -24,7 +28,12 @@ namespace teh
 			RPGRoom* get_location();
 		
 			void say(const std::string& msg);
+			RPGRoom* move(const unsigned short int& axis, const short int& delta);
+		
+			unsigned int id();
 		private:
+			void update_location(RPGRoom* destination);
+		
 			RPGGame* _parent;
 			unsigned int _id;
 			std::string _name;

@@ -14,6 +14,14 @@ namespace teh
 {
 	class GameServer;
 	
+	class ReuseTcpListener
+		: public sf::TcpListener
+	{
+		public:
+			void set_reuse(bool opt = true);
+	};
+	
+	
 	typedef std::pair<sf::IpAddress, unsigned short int> ipendpoint;
 	
 	ipendpoint get_remote_endpoint(const sf::TcpSocket& socket);
@@ -83,7 +91,7 @@ namespace teh
 			bool _done;
 			sf::Mutex _donemutex;
 			unsigned short int _port;
-			sf::TcpListener _listener;
+			ReuseTcpListener _listener;
 			std::map<ipendpoint, NetConnection*> _connections;
 			std::map<ipendpoint, sf::Thread*> _receive_threads;
 			std::map<ipendpoint, sf::Thread*> _send_threads;

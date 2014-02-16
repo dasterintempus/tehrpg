@@ -1,7 +1,23 @@
 #include "netserver.h"
+#include <sys/socket.h>
 
 namespace teh
 {
+	//
+	// ReuseTcpListener
+	//
+	void ReuseTcpListener::set_reuse(bool opt)
+	{
+		//set SO_REUSEADDR
+		int handle = getHandle();
+		int optval;
+		if (opt)
+			optval = 1;
+		else
+			optval = 0;
+		setsockopt(handle, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
+	}
+	
 	//
 	// NetConnection
 	//
@@ -169,6 +185,8 @@ namespace teh
 	NetServer::NetServer(const unsigned short int& port, GameServerInterface* gameserv)
 		: _port(port), _gameserv(gameserv), _done(false)
 	{
+		_listener.set_reuse();
+		//Set not blocking too
 		_listener.setBlocking(false);
 	}
 	

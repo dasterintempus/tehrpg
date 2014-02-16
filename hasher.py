@@ -11,6 +11,4 @@ passwd_sha.update(sys.argv[1])
 
 hashedpasswd = passwd_sha.hexdigest()
 
-challenge_sha.update(sys.argv[2] + hashedpasswd)
-
-print challenge_sha.hexdigest()
+print hashedpasswd

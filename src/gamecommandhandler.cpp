@@ -25,10 +25,18 @@ namespace teh
 						client->write_line("Invalid arguments for /login");
 						return;
 					}
-					client->username(cmd.arguments[1]);
-					client->state(GameClient::LoginState);
-					client->write_line("Challenge:");
-					client->write_line(client->challenge());
+					
+					if (_parent->find_from_username(cmd.arguments[1]) == -1)
+					{
+						client->username(cmd.arguments[1]);
+						client->state(GameClient::LoginState);
+						client->write_line("Challenge:");
+						client->write_line(client->challenge());
+					}
+					else
+					{
+						client->write_line("User already logged in.");
+					}
 				}
 				else if (first == "su" && cmd.slashed)
 				{
@@ -56,17 +64,19 @@ namespace teh
 						client->write_line("Invalid arguments for /passwd");
 						return;
 					}
+					
 					if (_parent->sql()->validate_login(client->username(), client->challenge(), cmd.arguments[1]))
 					{
-						client->write_line("Logged in.");
 						client->state(GameClient::LoggedInState);
+						_parent->update_permissions(client);
+						client->write_line("Logged in.");
 					}
 					else
 					{
-						client->write_line("Failed login, please /login again.");
 						client->generate_challenge();
 						client->state(GameClient::WelcomeState);
 						client->username("");
+						client->write_line("Failed login, please /login again.");
 					}
 				}
 				else
@@ -75,6 +85,7 @@ namespace teh
 				}
 				break;
 			case GameClient::LoggedInState:
+			case GameClient::PlayingState:
 				if (first == "logout" && cmd.slashed)
 				{
 					if (cmd.arguments.size() != 1)
