@@ -112,8 +112,10 @@ namespace teh
 		if (_next == 0) //Root client
 		{
 			//id remains 0
+			_next++;
 			_clients[id] = new GameClient(conn);
 			_clients[id]->write_line(greeting(id));
+			
 		}
 		else
 		{

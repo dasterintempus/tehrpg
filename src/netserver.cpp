@@ -41,14 +41,14 @@ namespace teh
 	bool NetConnection::has_line()
 	{
 		sf::Lock inbufferlock(_inbuffermutex);
-		return _inbuffer.str().find("\r\n") != std::string::npos;
+		return _inbuffer.str().find("\n") != std::string::npos;
 	}
 	
 	std::string NetConnection::read_line()
 	{
 		sf::Lock inbufferlock(_inbuffermutex);
 		std::string inbuffercopy = _inbuffer.str();
-		size_t pos = inbuffercopy.find("\r\n");
+		size_t pos = inbuffercopy.find("\n");
 		if (pos == std::string::npos)
 		{
 			return std::string();
@@ -57,9 +57,15 @@ namespace teh
 		{
 			std::string line = inbuffercopy.substr(0, pos);
 			std::cerr << "line: " << line << std::endl;
-			inbuffercopy = inbuffercopy.substr(pos+2);
-			//std::cerr << "inbuffercopy: " << inbuffercopy << std::endl;
-			_inbuffer.str(inbuffercopy);
+			if (inbuffercopy.size() > pos)
+			{
+				inbuffercopy = inbuffercopy.substr(pos+1);
+				_inbuffer.str(inbuffercopy);
+			}
+			else
+			{
+				_inbuffer.str("");
+			}
 			return line;
 		}
 	}
@@ -133,12 +139,13 @@ namespace teh
 				_outbuffermutex.unlock();
 				
 				std::cerr << "Trying to send out: " << str_out;
-				sf::Socket::Status sendstatus = _socket->send(str_out.c_str(), str_out.size() + 1);
+				sf::Socket::Status sendstatus = _socket->send(str_out.c_str(), str_out.size());
 				switch (sendstatus)
 				{
 					case sf::Socket::Done:
 						break;
 					case sf::Socket::NotReady:
+						std::cerr << "Socket not ready to send" << std::endl;
 						_outbuffer << str_out;
 						break;
 					default:

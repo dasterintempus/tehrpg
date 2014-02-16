@@ -40,7 +40,7 @@ namespace teh
 		_consoleconnection = new ConsoleConnection();
 		_consolethread = new sf::Thread(&ConsoleConnection::start, _consoleconnection);
 
-		_mysql = new MySQL("localhost", 3306, "tehmud", "Tur7tle$", "tehmud");
+		_mysql = new MySQL("localhost", 3306, "tehrpg", "tur7tle", "tehrpg");
 		
 		_rpggame = new RPGGame(this, _gameserver);
 		_rpggamethread = new sf::Thread(&RPGGame::start, _rpggame);

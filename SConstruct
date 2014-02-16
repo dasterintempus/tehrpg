@@ -23,7 +23,6 @@ if ARGUMENTS.get("debug", 0) or "gdb" in COMMAND_LINE_TARGETS:
 else:
 	env["MODE"] = "release"
 
-#server section
 buildpath = os.path.join("build", env["MODE"], "tehrpg")
 
 includedirs = ["/home/dasterin/include"]
