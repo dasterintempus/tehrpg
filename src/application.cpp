@@ -43,6 +43,8 @@ namespace teh
 			delete _rpggame;
 		if (_rpggamethread)
 			delete _rpggamethread;
+		if (_commandparser)
+			delete _commandparser;
 	}
 	
 	int Application::init(int argc, char** argv)

@@ -211,6 +211,7 @@ namespace teh
 			delete res;
 			delete prep_stmt;
 		}
+		delete conn;
 		return wallsides;
 	}
 	

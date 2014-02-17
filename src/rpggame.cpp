@@ -63,7 +63,7 @@ namespace teh
 		}
 		if (remove != -1)
 		{
-			_activecharacters.erase(remove);
+			logout(remove);
 		}
 		return -1;
 	}
@@ -73,6 +73,19 @@ namespace teh
 		if (character)
 			return check_logged_in(character->name());
 		return -1;
+	}
+	
+	void RPGGame::logout(const clientid& client)
+	{
+		if (_activecharacters.count(client) == 0)
+			return;
+		
+		RPGCharacter* character = _activecharacters[client];
+		_activecharacters.erase(client);
+		
+		RPGRoom* room = character->get_location();
+		
+		room->broadcast(character->name() + " magically disappears!");
 	}
 			
 	RPGCharacter* RPGGame::select_character(const clientid& client, const std::string& charactername)
@@ -127,8 +140,14 @@ namespace teh
 			}
 			else
 			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
 				return 0;
-			}
+			}			
+			delete res;
+			delete prep_stmt;
+			delete conn;
 		}
 		return _characters[id];
 	}
@@ -181,8 +200,14 @@ namespace teh
 			}
 			else
 			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
 				return 0;
 			}
+			delete res;
+			delete prep_stmt;
+			delete conn;
 		}
 		return _rooms[id];
 	}

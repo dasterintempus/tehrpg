@@ -157,7 +157,7 @@ namespace teh
 			if (handler->accepts_command(cmd))
 			{
 				handler->handle_command(cmd);
-				return;
+				//return;
 			}
 		}
 	}

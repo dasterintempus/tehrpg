@@ -197,14 +197,17 @@ namespace teh
 		{
 			delete (*i).second;
 		}
+		_receive_threads.clear();
 		for (std::map<ipendpoint, sf::Thread*>::iterator i = _send_threads.begin(); i != _send_threads.end(); i++)
 		{
 			delete (*i).second;
 		}
+		_send_threads.clear();
 		for (std::map<ipendpoint, NetConnection*>::iterator i = _connections.begin();i != _connections.end(); i++)
 		{
 			delete (*i).second;
 		}
+		_connections.clear();
 	}
 	
 	void NetServer::start()
@@ -227,6 +230,10 @@ namespace teh
 			{
 				std::cerr << "Got connection from " << client->getRemoteAddress() << std::endl;
 				add_client(client);
+			}
+			else
+			{
+				delete client;
 			}
 			
 			check_done_clients();

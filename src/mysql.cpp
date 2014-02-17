@@ -129,9 +129,9 @@ namespace teh
 		char* hashedbytes = new char[sha.DigestSize()];
 		memcpy(hashedbytes, buffer, sha.DigestSize());
 		std::string hashed(hashedbytes, sha.DigestSize());
-		delete buffer;
-		delete inputbytes;
-		delete hashedbytes;
+		delete[] buffer;
+		delete[] inputbytes;
+		delete[] hashedbytes;
 		return hashed;
 	}
 	

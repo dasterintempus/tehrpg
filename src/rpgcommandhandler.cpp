@@ -39,6 +39,11 @@ namespace teh
 			cmd_makechar(cmd);
 			return;
 		}
+		else if (first == "logout" && cmd.slashed && character)
+		{
+			cmd_logout(cmd);
+			return;
+		}
 		
 		if (!character)
 			return;
@@ -81,7 +86,8 @@ namespace teh
 			if (first == "select" ||
 				first == "listchars" ||
 				first == "addroom" ||
-				first == "makechar")
+				first == "makechar" ||
+				first == "logout")
 				return true;
 		}
 		return false;
@@ -104,9 +110,12 @@ namespace teh
 		{
 			if (_parent->check_logged_in(cmd.arguments[1]) == -1)
 			{
-				if (_parent->select_character(cmd.client, cmd.arguments[1]))
+				character = _parent->select_character(cmd.client, cmd.arguments[1]);
+				if (character)
 				{
 					_parent->message_client(cmd.client, "Selected character: " + cmd.arguments[1]);
+					RPGRoom* location = character->get_location();
+					location->broadcast(character->name() + " appears magically!");
 				}
 				else
 				{
@@ -261,6 +270,11 @@ namespace teh
 			_parent->message_client(cmd.client, "Unable to create character (name taken?)");
 			return;
 		}
+	}
+	
+	void RPGCommandHandler::cmd_logout(const Command& cmd)
+	{
+		_parent->logout(cmd.client);
 	}
 
 	void RPGCommandHandler::cmd_say(const Command& cmd)

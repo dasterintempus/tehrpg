@@ -116,7 +116,7 @@ namespace teh
 		sql::Connection* conn = _parent->sql()->connect();
 		
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Rooms`.`id` FROM `Characters` JOIN `Rooms` WHERE `Characters`.`room_id` = `Rooms`.`id` AND `Characters`.`id` = ?");
-		prep_stmt->setInt(1, _id);
+		prep_stmt->setInt(1, id());
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		res->next();
 		

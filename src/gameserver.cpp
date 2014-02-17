@@ -104,6 +104,7 @@ namespace teh
 	GameServer::~GameServer()
 	{
 		//NetServer handles cleanup of clients
+		delete _clients[0]; //cleanup root client
 	}
 	
 	clientid GameServer::add_connection(GameConnectionInterface* conn)
@@ -116,7 +117,6 @@ namespace teh
 			_next++;
 			_clients[id] = new GameClient(conn);
 			_clients[id]->write_line(greeting(id));
-			
 		}
 		else
 		{
@@ -131,7 +131,11 @@ namespace teh
 	{
 		sf::Lock clientslock(_clientsmutex);
 		if (_clients.count(id))
+		{
+			delete _clients[id];
 			_clients.erase(id);
+			_parent->rpg()->logout(id);
+		}
 	}
 	
 	void GameServer::close_client(const clientid& id)

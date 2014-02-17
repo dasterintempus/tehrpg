@@ -37,7 +37,10 @@ env.Append(LIBPATH = libdirs)
 
 if env["MODE"] == "debug":
 	env.Append(CXXFLAGS = "-ggdb")
-	env.Append(CXXFLAGS = "-O0")
+	if "memcheck" in COMMAND_LINE_TARGETS:
+		env.Append(CXXFLAGS = "-O1")
+	else:
+		env.Append(CXXFLAGS = "-O0")
 	env.Append(CXXFLAGS = "-DTEHDEBUG")
 elif env["MODE"] == "release":
 	env.Append(CXXFLAGS = "-O3")
@@ -59,6 +62,10 @@ gdb = env.Command(source=buildpath, target="gdbcerr.log", action="gdb -ex 'run 2
 #env.Depends(server, gdb)
 env.AlwaysBuild(gdb)
 env.Alias("gdb", gdb)
+
+memcheck = env.Command(source=buildpath, target="memcheck.log", action="valgrind --leak-check=full --show-reachable=yes --num-callers=20 $SOURCE 1>$TARGET 2>&1")
+env.AlwaysBuild(memcheck)
+env.Alias("memcheck", memcheck)
 
 mysql = env.Command(source="./tehrpg.sql", target="tehrpg", action="@mysql -u tehrpg -ptur7tle $TARGET < $SOURCE")
 env.AlwaysBuild(mysql)
