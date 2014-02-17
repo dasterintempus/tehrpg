@@ -31,7 +31,17 @@ namespace teh
 		prep_stmt->setString(1, username.c_str());
 		prep_stmt->setString(2, hashed.c_str());
 		prep_stmt->setInt(3, permissions);
-		int changed = prep_stmt->executeUpdate();
+		int changed;
+		try
+		{
+			changed = prep_stmt->executeUpdate();
+		}
+		catch (sql::SQLException e)
+		{
+			delete prep_stmt;
+			delete conn;
+			return false;
+		}
 		delete prep_stmt;
 		delete conn;
 		return changed == 1;

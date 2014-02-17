@@ -38,6 +38,22 @@ namespace teh
 						client->write_line("User already logged in.");
 					}
 				}
+				else if (first == "register" && cmd.slashed)
+				{
+					if (cmd.arguments.size() != 3)
+					{
+						client->write_line("Invalid arguments for /register");
+						return;
+					}
+					
+					if (_parent->sql()->register_user(cmd.arguments[1], cmd.arguments[2], 1))
+					{
+						client->username(cmd.arguments[1]);
+						client->state(GameClient::LoggedInState);
+						client->write_line("Registered and logged in.");
+					}
+					
+				}
 				else if (first == "su" && cmd.slashed)
 				{
 					if (cmd.client == 0)
