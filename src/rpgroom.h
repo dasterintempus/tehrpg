@@ -14,7 +14,6 @@ namespace teh
 	{
 		public:
 			static RPGRoom* build(RPGGame* parent, const long int& xpos, const long int& ypos, const short int& zpos, const std::string& description);
-		
 			RPGRoom(unsigned int id, RPGGame* parent);
 		
 			std::vector<RPGCharacter*> get_occupants();
@@ -27,6 +26,18 @@ namespace teh
 			short int zpos();
 		
 			std::string description();
+		
+			bool can_exit_north();
+			bool can_exit_south();
+			bool can_exit_east();
+			bool can_exit_west();
+			bool can_exit_up();
+			bool can_exit_down();
+		
+			stringvector get_wall_sides();
+			stringvector get_exits();
+		
+			bool can_exit(const int& dx, const int& dy, const int& dz);
 		private:
 			void locate();
 		

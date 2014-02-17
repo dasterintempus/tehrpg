@@ -29,6 +29,7 @@ namespace teh
 		
 			void say(const std::string& msg);
 			RPGRoom* move(const unsigned short int& axis, const short int& delta);
+			std::string look();
 		
 			unsigned int id();
 		private:

@@ -58,6 +58,11 @@ namespace teh
 			cmd_move(cmd);
 			return;
 		}
+		else if (first == "look")
+		{
+			cmd_look(cmd);
+			return;
+		}
 	}
 	
 	bool RPGCommandHandler::accepts_command(const Command& cmd)
@@ -67,7 +72,8 @@ namespace teh
 		{
 			if (first == "say" ||
 				first == "where" ||
-				first == "move")
+				first == "move" ||
+				first == "look")
 				return true;
 		}
 		else
@@ -339,11 +345,29 @@ namespace teh
 		if (destination)
 		{
 			_parent->message_client(cmd.client, "Moved " + cmd.arguments[1]);
-			_parent->message_client(cmd.client, "You are in: " + destination->description());
+			std::string looktext = character->look();
+			_parent->message_client(cmd.client, looktext);
 		}
 		else
 		{
 			_parent->message_client(cmd.client, "Unable to move that direction right now. (Room does not exist)");
 		}
+	}
+	
+	void RPGCommandHandler::cmd_look(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		if (cmd.arguments.size() != 1)
+		{
+			_parent->message_client(cmd.client, "Invalid usage of look command.");
+			_parent->message_client(cmd.client, "Usage: look");
+			return;
+		}
+		
+		std::string looktext = character->look();
+		_parent->message_client(cmd.client, looktext);
 	}
 }

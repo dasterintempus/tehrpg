@@ -75,7 +75,8 @@ namespace teh
 		while (res->next())
 		{
 			RPGCharacter* character = _parent->get_character(res->getInt(1));
-			occupants.push_back(character);
+			if (_parent->check_logged_in(character) != -1)
+				occupants.push_back(character);
 		}
 		delete res;
 		delete prep_stmt;
@@ -121,7 +122,144 @@ namespace teh
 	{
 		return _description;
 	}
-
+	
+	bool RPGRoom::can_exit_north()
+	{
+		return can_exit(0, -1, 0);
+	}
+	
+	bool RPGRoom::can_exit_south()
+	{
+		return can_exit(0, 1, 0);
+	}
+	
+	bool RPGRoom::can_exit_east()
+	{
+		return can_exit(-1, 0, 0);
+	}
+	
+	bool RPGRoom::can_exit_west()
+	{
+		return can_exit(1, 0, 0);
+	}
+	
+	bool RPGRoom::can_exit_up()
+	{
+		return can_exit(0, 0, -1);
+	}
+	
+	bool RPGRoom::can_exit_down()
+	{
+		return can_exit(0, 0, 1);	
+	}
+	
+	stringvector RPGRoom::get_wall_sides()
+	{
+		stringvector wallsides;
+		sql::Connection* conn = _parent->sql()->connect();
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Walls`.`side` FROM `Walls` WHERE `Walls`.`room_id` = ?");
+		prep_stmt->setInt(1, id());
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		while (res->next())
+		{
+			wallsides.push_back(res->getString(1));
+		}
+		delete res;
+		delete prep_stmt;
+		
+		RPGRoom* other = _parent->find_room(xpos()+1, ypos(), zpos());
+		if (other)
+		{
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Walls`.`side` FROM `Walls` WHERE `Walls`.`room_id` = ?");
+			prep_stmt->setInt(1, other->id());
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			while (res->next())
+			{
+				if (res->getString(1) == "east")
+					wallsides.push_back("west");
+			}
+			delete res;
+			delete prep_stmt;
+		}
+		
+		other = _parent->find_room(xpos(), ypos()+1, zpos());
+		if (other)
+		{
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Walls`.`side` FROM `Walls` WHERE `Walls`.`room_id` = ?");
+			prep_stmt->setInt(1, other->id());
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			while (res->next())
+			{
+				if (res->getString(1) == "north")
+					wallsides.push_back("south");
+			}
+			delete res;
+			delete prep_stmt;
+		}
+		
+		other = _parent->find_room(xpos(), ypos(), zpos()+1);
+		if (other)
+		{
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Walls`.`side` FROM `Walls` WHERE `Walls`.`room_id` = ?");
+			prep_stmt->setInt(1, other->id());
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			while (res->next())
+			{
+				if (res->getString(1) == "up")
+					wallsides.push_back("down");
+			}
+			delete res;
+			delete prep_stmt;
+		}
+		return wallsides;
+	}
+	
+	stringvector RPGRoom::get_exits()
+	{
+		stringvector out;
+		
+		if (can_exit(-1, 0, 0))
+			out.push_back("east");
+		if (can_exit(1, 0, 0))
+			out.push_back("west");
+		if (can_exit(0, -1, 0))
+			out.push_back("north");
+		if (can_exit(0, 1, 0))
+			out.push_back("south");
+		if (can_exit(0, 0, -1))
+			out.push_back("up");
+		if (can_exit(0, 0, 1))
+			out.push_back("down");
+		
+		return out;
+	}
+	
+	bool RPGRoom::can_exit(const int& dx, const int& dy, const int& dz)
+	{
+		RPGRoom* other = _parent->find_room(xpos()+dx, ypos()+dy, zpos()+dz);
+		if (!other)
+			return false;
+		
+		stringvector wallsides = get_wall_sides();
+		for (unsigned int n = 0;n < wallsides.size();n++)
+		{
+			std::string side = wallsides[n];
+			if (side == "north" and dy < 0)
+				return false;
+			if (side == "south" and dy > 0)
+				return false;
+			if (side == "east" and dx < 0)
+				return false;
+			if (side == "west" and dx > 0)
+				return false;
+			if (side == "up" and dz < 0)
+				return false;
+			if (side == "down" and dz > 0)
+				return false;
+		}
+		return true;
+	}
+	
 	void RPGRoom::locate()
 	{
 		sql::Connection* conn = _parent->sql()->connect();

@@ -2,6 +2,7 @@
 #include "rpggame.h"
 #include "rpgroom.h"
 #include "mysql.h"
+#include <sstream>
 
 namespace teh
 {
@@ -165,12 +166,57 @@ namespace teh
 			return 0;
 		}
 		
+		if (!location->can_exit(xpos - location->xpos(), ypos - location->ypos(), zpos - location->zpos()))
+		{
+			return 0;
+		}
+		
 		RPGRoom* destination = _parent->find_room(xpos, ypos, zpos);
 		if (destination)
 		{
 			update_location(destination);
 		}
 		return destination;
+	}
+	
+	std::string RPGCharacter::look()
+	{
+		std::stringstream sstream;
+		RPGRoom* location = get_location();
+		sstream << "You look around and see: " << location->description() << "\n";
+		//get who else is here
+		std::vector<RPGCharacter*> occupants = location->get_occupants();
+		if (occupants.size() > 1)
+		{
+			sstream << "Here with you are: ";
+		}
+		for (unsigned int n=0;n<occupants.size();n++)
+		{
+			if (occupants[n] == this)
+				continue;
+			if (n == occupants.size()-1)
+				sstream << occupants[n]->name() << "\n";
+			else
+				sstream << occupants[n]->name() << ", ";
+		}
+		//Get exits
+		stringvector exits = location->get_exits();
+		if (exits.size() > 0)
+		{
+			sstream << "There are exits heading: ";
+		}
+		for (unsigned int n=0;n<exits.size();n++)
+		{
+			if (n == occupants.size()-1)
+				sstream << exits[n] << "\n";
+			else
+				sstream << exits[n] << ", ";
+		}
+		if (exits.size() > 0)
+		{
+			sstream << "\n";
+		}
+		return sstream.str();
 	}
 	
 	unsigned int RPGCharacter::id()
