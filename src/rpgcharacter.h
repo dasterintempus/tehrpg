@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <boost/regex.hpp>
 
 namespace teh
 {	
@@ -28,6 +29,7 @@ namespace teh
 			RPGRoom* get_location();
 		
 			void say(const std::string& msg);
+			void emote(const std::string& msg, bool possessive=false);
 			RPGRoom* move(const unsigned short int& axis, const short int& delta);
 			std::string look();
 		

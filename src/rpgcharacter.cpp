@@ -131,7 +131,20 @@ namespace teh
 	
 	void RPGCharacter::say(const std::string& msg)
 	{
-		get_location()->broadcast(_name + " says: \"" + msg + "\"");
+		get_location()->broadcast(name() + " says: \"" + msg + "\"");
+	}
+	
+	void RPGCharacter::emote(const std::string& msg, bool possessive)
+	{
+		if (possessive)
+		{
+			get_location()->broadcast(name() + "'s " + msg);
+		}
+		else
+		{
+			get_location()->broadcast(name() + " " + msg);
+		}
+		
 	}
 	
 	RPGRoom* RPGCharacter::move(const unsigned short int& axis, const short int& delta)

@@ -25,6 +25,7 @@ namespace teh
 			void cmd_where(const Command& cmd);
 			void cmd_move(const Command& cmd);
 			void cmd_look(const Command& cmd);
+			void cmd_emote(const Command& cmd);
 		
 			RPGGame* _parent;
 	};

@@ -18,7 +18,7 @@ namespace teh
 		switch (client->state())
 		{
 			case GameClient::WelcomeState:
-				if (first == "login" && cmd.slashed)
+				if (first == "login")
 				{
 					if (cmd.arguments.size() != 2)
 					{
@@ -38,7 +38,7 @@ namespace teh
 						client->write_line("User already logged in.");
 					}
 				}
-				else if (first == "register" && cmd.slashed)
+				else if (first == "register")
 				{
 					if (cmd.arguments.size() != 3)
 					{
@@ -54,7 +54,7 @@ namespace teh
 					}
 					
 				}
-				else if (first == "su" && cmd.slashed)
+				else if (first == "su")
 				{
 					if (cmd.client == 0)
 					{
@@ -73,7 +73,7 @@ namespace teh
 				}
 				break;
 			case GameClient::LoginState:
-				if (first == "passwd" && cmd.slashed)
+				if (first == "passwd")
 				{
 					if (cmd.arguments.size() != 2)
 					{
@@ -102,7 +102,7 @@ namespace teh
 				break;
 			case GameClient::LoggedInState:
 			case GameClient::PlayingState:
-				if (first == "logout" && cmd.slashed)
+				if (first == "logout")
 				{
 					if (cmd.arguments.size() != 1)
 					{
@@ -114,7 +114,7 @@ namespace teh
 					client->username("");
 					client->write_line("Logged out.");
 				}
-				else if (first == "kill" && cmd.slashed)
+				else if (first == "kill")
 				{
 					//Check permissions
 					if (client->permissions() & GameClient::ServerAdminPermissions)
@@ -163,13 +163,13 @@ namespace teh
 						client->write_line("Insufficient permissions");
 					}
 				}
-				else if (first == "shutdown" && cmd.slashed)
+				else if (first == "shutdown")
 				{
 					//Check permissions, or be console client
 					if (client->permissions() & GameClient::RootPermissions || cmd.client == 0)
 					{
-						_parent->shutdown(client->username());
 						client->write_line("Initiating shutdown");
+						_parent->shutdown(client->username());
 					}
 					else
 					{
@@ -189,7 +189,7 @@ namespace teh
 	bool GameCommandHandler::accepts_command(const Command& cmd)
 	{
 		std::string first = cmd.arguments[0];
-		if (cmd.slashed)
+		if (cmd.prefix == '/')
 		{
 			if (first == "login" ||
 			first == "passwd" ||

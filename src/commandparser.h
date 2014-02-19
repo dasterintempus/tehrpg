@@ -27,31 +27,13 @@ namespace teh
 		return n;
 	}
 	
-	/*
-	bool is_int(const std::string& in);
-	int to_int(const std::string& in);
-	
-	bool is_uint(const std::string& in);
-	unsigned int to_uint(const std::string& in);
-	
-	bool is_long(const std::string& in);
-	long int to_long(const std::string& in);
-	
-	bool is_ulong(const std::string& in);
-	long unsigned int to_ulong(const std::string& in);
-	
-	bool is_short(const std::string& in);
-	short int to_short(const std::string& in);
-	
-	bool is_ushort(const std::string& in);
-	short unsigned int to_ushort(const std::string& in);
-	*/
+	std::string stringjoin(const stringvector& list, const std::string& sep = " ");
 	
 	struct Command
 	{
 		clientid client;
 		stringvector arguments;
-		bool slashed;
+		char prefix;
 	};
 	
 	class CommandHandlerInterface
@@ -65,6 +47,9 @@ namespace teh
 	class CommandLexer
 	{
 		public:
+			static const std::string PrefixChars;
+			static char GetPrefix(const std::string& input);
+		
 			static Command lex(const std::string& line, const clientid& client);
 			CommandLexer(const clientid& client);
 			void input(const std::string& in);
@@ -82,7 +67,7 @@ namespace teh
 			
 			bool _valid;
 			ParseState _state;
-			bool _slashed;
+			char _prefix;
 			std::stringstream _buffer;
 			stringvector _arguments;
 			clientid _client;

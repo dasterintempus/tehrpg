@@ -47,7 +47,7 @@ elif env["MODE"] == "release":
 
 env.ParseConfig("mysql_config --libs")
 
-libs = ["cryptopp", "mysqlcppconn-static", "sfml-system", "sfml-network"]
+libs = ["cryptopp", "mysqlcppconn-static", "sfml-system", "sfml-network", "boost_regex"]
 env.Append(LIBS = libs)
 
 sources = Glob("src/*.cpp")

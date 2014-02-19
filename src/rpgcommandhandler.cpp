@@ -19,27 +19,27 @@ namespace teh
 		RPGCharacter* character = _parent->get_active_character(cmd.client);
 		
 		std::string first = cmd.arguments[0];
-		if (first == "select" && cmd.slashed && !character)
+		if (first == "select" && !character)
 		{
 			cmd_select(cmd);
 			return;
 		}
-		else if (first == "listchars" && cmd.slashed)
+		else if (first == "listchars")
 		{
 			cmd_listchars(cmd);
 			return;
 		}
-		else if (first == "addroom" && cmd.slashed)
+		else if (first == "addroom")
 		{
 			cmd_addroom(cmd);
 			return;
 		}
-		else if (first == "makechar" && cmd.slashed && !character)
+		else if (first == "makechar" && !character)
 		{
 			cmd_makechar(cmd);
 			return;
 		}
-		else if (first == "logout" && cmd.slashed && character)
+		else if (first == "logout" && character)
 		{
 			cmd_logout(cmd);
 			return;
@@ -48,7 +48,7 @@ namespace teh
 		if (!character)
 			return;
 		
-		if (first == "say")
+		if (first == "say" || cmd.prefix == '.' || cmd.prefix == '"' || cmd.prefix == '\'')
 		{
 			cmd_say(cmd);
 			return;
@@ -68,20 +68,26 @@ namespace teh
 			cmd_look(cmd);
 			return;
 		}
+		else if (first == "emote" || cmd.prefix == ':')
+		{
+			cmd_emote(cmd);
+			return;
+		}
 	}
 	
 	bool RPGCommandHandler::accepts_command(const Command& cmd)
 	{
 		std::string first = cmd.arguments[0];
-		if (!cmd.slashed)
+		if (cmd.prefix == '\0')
 		{
 			if (first == "say" ||
 				first == "where" ||
 				first == "move" ||
-				first == "look")
+				first == "look" ||
+				first == "emote")
 				return true;
 		}
-		else
+		else if (cmd.prefix == '/')
 		{
 			if (first == "select" ||
 				first == "listchars" ||
@@ -89,6 +95,16 @@ namespace teh
 				first == "makechar" ||
 				first == "logout")
 				return true;
+		}
+		else if (cmd.prefix == '.' || cmd.prefix == '"' || cmd.prefix == '\'')
+		{
+			//say aliases
+			return true;
+		}
+		else if (cmd.prefix == ':')
+		{
+			//emote alias
+			return true;
 		}
 		return false;
 	}
@@ -283,13 +299,36 @@ namespace teh
 		if (!character)
 			return;
 		
-		if (cmd.arguments.size() != 2)
+		std::string msg;
+		
+		if (cmd.arguments[0] == "say" && cmd.prefix == '\0')
 		{
-			_parent->message_client(cmd.client, "Invalid usage of say command (use double quotes)");
+			stringvector args = cmd.arguments;
+			args.erase(args.begin());
+			msg = stringjoin(args);
 		}
 		else
 		{
-			character->say(cmd.arguments[1]);
+			msg = stringjoin(cmd.arguments);
+		}
+		
+		static const boost::regex smile("(.+) +[:=]\\) *$");
+		static const std::string smile_replacer = "smiles, and says: \"\\1\"";
+		
+		std::string emotemsg;
+		
+		if (boost::regex_match(msg, smile))
+		{
+			emotemsg = boost::regex_replace(msg, smile, smile_replacer, boost::match_default | boost::format_sed);
+		}
+		
+		if (emotemsg == "")
+		{
+			character->say(msg);
+		}
+		else
+		{
+			character->emote(emotemsg);
 		}
 	}
 	
@@ -383,5 +422,29 @@ namespace teh
 		
 		std::string looktext = character->look();
 		_parent->message_client(cmd.client, looktext);
+	}
+	
+	void RPGCommandHandler::cmd_emote(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		if (cmd.arguments[0] == "emote" && cmd.prefix == '\0')
+		{
+			stringvector args = cmd.arguments;
+			args.erase(args.begin());
+			character->emote(stringjoin(args));
+		}
+		else if (cmd.arguments[0] == "s" && cmd.prefix == ':')
+		{
+			stringvector args = cmd.arguments;
+			args.erase(args.begin());
+			character->emote(stringjoin(args), true);
+		}
+		else
+		{
+			character->emote(stringjoin(cmd.arguments));
+		}
 	}
 }

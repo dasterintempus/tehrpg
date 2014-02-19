@@ -2,9 +2,40 @@
 
 namespace teh
 {
+	std::string stringjoin(const stringvector& list, const std::string& sep)
+	{
+		std::stringstream out;
+		for (unsigned int n=0;n<list.size();n++)
+		{
+			if (n == list.size() - 1)
+			{
+				out << list[n];
+			}
+			else
+			{
+				out << list[n] << sep;
+			}
+		}
+		return out.str();
+	}
+	
 	CommandHandlerInterface::~CommandHandlerInterface()
 	{
 		
+	}
+
+	const std::string CommandLexer::PrefixChars = "\"'./:;!@#";
+	
+	char CommandLexer::GetPrefix(const std::string& input)
+	{
+		for (unsigned int n=0;n<PrefixChars.size();n++)
+		{
+			if (input[0] == PrefixChars[n])
+			{
+				return input[0];
+			}
+		}
+		return '\0';
 	}
 	
 	Command CommandLexer::lex(const std::string& line, const clientid& client)
@@ -15,7 +46,7 @@ namespace teh
 	}
 	
 	CommandLexer::CommandLexer(const clientid& client)
-		: _state(CommandLexer::NormalParseState), _slashed(false), _client(client), _valid(true)
+		: _state(CommandLexer::NormalParseState), _prefix('\0'), _client(client), _valid(true)
 	{
 		
 	}
@@ -24,10 +55,18 @@ namespace teh
 	{
 		if (_valid)
 		{
-			if (_arguments.size() == 0 && in[0] == '/')
+			if (_arguments.size() == 0)
 			{
-				_slashed = true;
-				update(in.substr(1));
+				char maybeprefix = CommandLexer::GetPrefix(in);
+				if (maybeprefix != '\0')
+				{
+					_prefix = maybeprefix;
+					update(in.substr(1));
+				}
+				else
+				{
+					update(in);
+				}
 			}
 			else
 			{
@@ -42,13 +81,13 @@ namespace teh
 		if (_valid)
 		{
 			cmd.arguments = _arguments;
-			cmd.slashed = _slashed;
+			cmd.prefix = _prefix;
 			cmd.client = _client;
 			_valid = false;
 		}
 		else
 		{
-			cmd.slashed = false;
+			cmd.prefix = _prefix;
 			cmd.client = -1;
 		}
 		return cmd;
