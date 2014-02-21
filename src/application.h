@@ -3,6 +3,10 @@
 #include <SFML/System.hpp>
 #include "typedefs.h"
 
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
+
 namespace teh
 {
 	class NetServer;
@@ -18,7 +22,7 @@ namespace teh
 			Application();
 			~Application();
 		
-      int init(int argc, char** argv);
+			int init(int argc, char** argv);
 			int start(int argc, char** argv);
 			void finish();
 
@@ -46,5 +50,7 @@ namespace teh
 			RPGGame* _rpggame;
 		
 			CommandParser* _commandparser;
+		
+			po::variables_map _vm;
 	};
 }

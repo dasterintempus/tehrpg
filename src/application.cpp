@@ -7,6 +7,7 @@
 #include "commandparser.h"
 
 #include <iostream>
+#include <fstream>
 
 namespace teh
 {
@@ -50,31 +51,68 @@ namespace teh
 	int Application::init(int argc, char** argv)
 	{
 		srand(time(0));
+		
+		po::options_description generic_opts("Allowed options");
+		generic_opts.add_options()
+			("port", po::value<unsigned short int>()->default_value(3137), "Port for server to listen on for client connections")
+		;
+		
+		po::options_description cmdline_opts("Allowed command line options");
+		cmdline_opts.add_options()
+			("configfile,c", po::value<std::string>()->default_value("conf/tehrpg.conf"), "Config file path")
+			("help", "Output help message")
+		;
+		
+		po::options_description config_opts("Allowed configuration options");
+		config_opts.add_options()
+			("sqlhost", po::value<std::string>()->default_value("localhost"), "SQL server hostname")
+			("sqldb", po::value<std::string>()->default_value("tehrpg"), "SQL database name")
+			("sqluser", po::value<std::string>()->default_value("tehrpg"), "SQL database username")
+			("sqlpass", po::value<std::string>(), "SQL database password")
+			("sqlport", po::value<unsigned short int>()->default_value(3306), "SQL server port")
+		;
+		
+		po::options_description real_cmdline_opts;
+		real_cmdline_opts.add(generic_opts).add(cmdline_opts);
+		
+		po::options_description real_config_opts;
+		real_config_opts.add(generic_opts).add(config_opts);
+		
+		po::options_description visible_config_opts;
+		visible_config_opts.add(generic_opts).add(cmdline_opts).add(config_opts);
 
-		short int port = 3137;
-		if (argc >= 2)
+		store(po::command_line_parser(argc, argv).options(real_cmdline_opts).run(), _vm);
+		notify(_vm);
+		
+		std::ifstream configifstream(_vm["configfile"].as<std::string>().c_str());
+		if (!configifstream)
 		{
-			std::string portstr = argv[1];
-			if (is_numeric<short int>(portstr))
-			{
-				port = to_numeric<short int>(portstr);
-			}
-			else
-			{
-				std::cerr << "Invalid port specified. (not a number?)" << std::endl;
+			std::cerr << "Can not open config file " << _vm["configfile"].as<std::string>() << std::endl;
 			return 2;
-			}
 		}
+		else
+		{
+			store(parse_config_file(configifstream, real_config_opts), _vm);
+			notify(_vm);
+		}
+		
+		if (_vm.count("help"))
+		{
+			std::cout << visible_config_opts;
+			return -1;
+		}
+	
+		//Done parsing arguments
 		
 		_gameserver = new GameServer(this);
 		_gameserverthread = new sf::Thread(&Application::start_gameserver, this);
-		_netserver = new NetServer(port, _gameserver);
+		_netserver = new NetServer(_vm["port"].as<unsigned short int>(), _gameserver);
 		_netserverthread = new sf::Thread(&Application::start_netserver, this);
 	
 		_consoleconnection = new ConsoleConnection();
 		_consolethread = new sf::Thread(&ConsoleConnection::start, _consoleconnection);
 
-		_mysql = new MySQL("localhost", 3306, "tehrpg", "tur7tle", "tehrpg");
+		_mysql = new MySQL(_vm["sqlhost"].as<std::string>(), _vm["sqlport"].as<unsigned short int>(), _vm["sqluser"].as<std::string>(), _vm["sqlpass"].as<std::string>(), _vm["sqldb"].as<std::string>());
 	
 		_rpggame = new RPGGame(this, _gameserver);
 		_rpggamethread = new sf::Thread(&RPGGame::start, _rpggame);
@@ -89,6 +127,8 @@ namespace teh
 		int result = init(argc, argv);
 		if (result != 0)
 		{
+			if (result < 0)
+				return 0;
 			return result;
 		}
 

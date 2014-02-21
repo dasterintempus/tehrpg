@@ -1,4 +1,5 @@
 .sconsign*
 build/*
+conf/*
 *.log
 *.o
