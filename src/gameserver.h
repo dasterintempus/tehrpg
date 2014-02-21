@@ -25,7 +25,7 @@ namespace teh
 				ClosingState,
 			};
 			
-			const static unsigned short int RootPermissions = 0b111111111111111;
+			const static unsigned short int RootPermissions = 0b100000000000000;
 			const static unsigned short int UserPermissions = 0b1;
 			const static unsigned short int ServerAdminPermissions = 0b10;
 			const static unsigned short int ContentAdminPermissions = 0b100;

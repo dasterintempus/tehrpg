@@ -52,7 +52,10 @@ namespace teh
 						client->state(GameClient::LoggedInState);
 						client->write_line("Registered and logged in.");
 					}
-					
+					else
+					{
+						client->write_line("Unable to register account, username taken?");
+					}
 				}
 				else if (first == "su")
 				{
@@ -113,6 +116,32 @@ namespace teh
 					client->state(GameClient::WelcomeState);
 					client->username("");
 					client->write_line("Logged out.");
+				}
+				else if (first == "createacct")
+				{
+					//Check permissions
+					if (client->permissions() & GameClient::ServerAdminPermissions)
+					{
+						if (cmd.arguments.size() != 3)
+						{
+							client->write_line("Invalid arguments for /createacct");
+							client->write_line("Usage: /createacct {username} {password}");
+							return;
+						}
+						
+						if (_parent->sql()->register_user(cmd.arguments[1], cmd.arguments[2], 1))
+						{
+							client->write_line("Created account.");
+						}
+						else
+						{
+							client->write_line("Unable to create account, username taken?");
+						}
+					}
+					else
+					{
+						client->write_line("Insufficient permissions");
+					}
 				}
 				else if (first == "kill")
 				{
@@ -176,6 +205,31 @@ namespace teh
 						client->write_line("Insufficient permissions");
 					}
 				}
+				else if (first == "setperms")
+				{
+					//Check permissions, or be console client
+					if (client->permissions() & GameClient::RootPermissions || cmd.client == 0)
+					{
+						if (cmd.arguments.size() != 3)
+						{
+							client->write_line("Invalid arguments for /setperms");
+							client->write_line("Usage: /settperms {username} {permissions}");
+							return;
+						}
+						if (_parent->sql()->set_permissions(cmd.arguments[1], to_numeric<unsigned short int>(cmd.arguments[2])))
+						{
+							client->write_line("Permissions set.");
+						}
+						else
+						{
+							client->write_line("Unable to set permissions.");
+						}
+					}
+					else
+					{
+						client->write_line("Insufficient permissions");
+					}
+				}
 				else
 				{
 					client->write_line("Invalid command for present state");
@@ -197,7 +251,9 @@ namespace teh
 			first == "register" ||
 			first == "kill" ||
 			first == "shutdown" ||
-			first == "su")
+			first == "su" ||
+			first == "setperms" ||
+			first == "createacct")
 				return true;
 		}
 		return false;

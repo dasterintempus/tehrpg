@@ -26,7 +26,7 @@ namespace teh
 		
 		_challenge = "";
 		
-		unsigned int count = (rand() % 5) + 5;
+		unsigned int count = (rand() % 5) + 20;
 		
 		for (unsigned int n = 0;n < count;n++)
 		{
