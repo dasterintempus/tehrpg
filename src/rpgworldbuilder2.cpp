@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include <time.h>
 #include <functional>
+#include <algorithm>
 
 namespace teh
 {
-	MapTunnelerBuilder::MapTunnelerBuilder(unsigned long int numsteps)
-		: _numsteps(numsteps)
+	MapTunnelerBuilder::MapTunnelerBuilder(unsigned long int numsteps, unsigned int densitycheckradius)
+		: _numsteps(numsteps), _densitycheckradius(densitycheckradius)
 	{
 		
 	}
@@ -46,7 +47,21 @@ namespace teh
 			
 			//done with loop
 			last = current;
-			//TODO: redo current.dir here
+			float currentdensity = density(Vec2<int>((int)(floor(current.pos.x())), (int)(floor(current.pos.y()))), (int)_densitycheckradius);
+			std::cout << "density " << currentdensity << std::endl;
+			//redo current.dir here
+			MassInfo mi = big_mass();
+			Vec2<float> masspos(mi.pos.x(), mi.pos.y());
+			std::cout << "masspos " << masspos << std::endl;
+			float anglebetween = (masspos - current.pos).angle();
+			std::cout << "anglebetween " << to_degrees<float>(anglebetween) << std::endl;
+			float realangle = anglebetween + to_radians<float>((rand()%30)-60);
+			float distance = (((rand()%100)/100.0f)+1.0f);
+			current.dir = Vec2<float>::from_angle(realangle) * distance;
+			std::cout << "new current.dir " << current.dir << std::endl;
+			//redo current.width here
+			current.width = (((rand()%400)/100.0f) + 3.5f) / (currentdensity * currentdensity);
+			std::cout << "width " << current.width << std::endl;
 			current.pos = current.pos + current.dir;
 			clamp_tunneler(current);
 		}
@@ -114,16 +129,116 @@ namespace teh
 		{
 			for (int y = bounds.a().y(); y < bounds.c().y(); y++)
 			{
-				if (x < 0 || y < 0)
+				if (x < 0 || y < 0 || x >= _xsize || y >= _ysize)
 					continue;
 				Vec2<float> testpoint(x,y);
-				std::cout << "test point: " << testpoint << std::endl;
+				//std::cout << "test point: " << testpoint << std::endl;
 				if (quad.contains(testpoint))
 				{
-					std::cout << "contains == true" << std::endl;
+					//std::cout << "contains == true" << std::endl;
 					_tiles[x][y].solid = false;
 				}
 			}
 		}
+	}
+	
+	float MapTunnelerBuilder::density(const Vec2<int>& center, int radius)
+	{
+		unsigned int totaltiles = 0;
+		unsigned int solidtiles = 0;
+		for (int x = -radius; x < radius; x++)
+		{
+			for (int y = -radius; y < radius; y++)
+			{
+				//I call this the "I'm-not-a-CS-major circle checking algorithm"
+				int dist = Vec2<int>(x,y).length();
+				//std::cout << "density check dist " << dist << std::endl;
+				if (dist > radius)
+					continue;
+				
+				Vec2<int> realpos = center + Vec2<int>(x, y);
+				//std::cout << "density check realpos " << realpos << std::endl;
+				
+				if (realpos.x() >= 0 && realpos.x() < _xsize)
+				{
+					if (realpos.y() >= 0 && realpos.y() < _ysize)
+					{
+						totaltiles++;
+						if (_tiles[realpos.x()][realpos.y()].solid)
+							solidtiles++;
+					}
+				}
+			}
+		}
+		if (totaltiles == 0) return 1;
+		return ((float)(solidtiles))/((float)(totaltiles));
+	}
+	
+	float MapTunnelerBuilder::density(const Quad<int>& rect)
+	{
+		unsigned int totaltiles = 0;
+		unsigned int solidtiles = 0;
+		
+		Quad<int> bounds = rect.bounding_rectangle<int>(); //should be basically a copy, but just to be safe
+		
+		for (int x = bounds.a().x(); x < bounds.b().x(); x++)
+		{
+			for (int y = bounds.a().y(); y < bounds.c().y(); y++)
+			{
+				if (x >= 0 && x < _xsize)
+				{
+					if (y >= 0 && y < _ysize)
+					{
+						totaltiles++;
+						if (_tiles[x][y].solid)
+							solidtiles++;
+					}
+				}
+			}
+		}
+		if (totaltiles == 0) return 1;
+		return ((float)(solidtiles))/((float)(totaltiles));
+	}
+	
+	MassInfo MapTunnelerBuilder::big_mass()
+	{
+		return big_mass(Quad<int>::rectangle(0,0,_xsize,_ysize));
+	}
+	
+	MassInfo MapTunnelerBuilder::big_mass(const Quad<int>& rect)
+	{
+		int xsize = rect.a2b_distance()/2;
+		int ysize = rect.b2c_distance()/2;
+		
+		MassInfo out;
+		out.density = density(rect);
+		out.pos = Vec2<int>(rect.a().x() + xsize, rect.a().y() + ysize);
+		
+		if (xsize <= _xsize/10 || ysize <= _ysize/10)
+			return out;
+		
+		Quad<int> tl = Quad<int>::rectangle(rect.a().x(), rect.a().y(), rect.a().x() + xsize, rect.a().y() + ysize);
+		Quad<int> tr = Quad<int>::rectangle(rect.a().x() + xsize, rect.a().y(), rect.a().x() + (xsize*2), rect.a().y() + ysize);
+		Quad<int> br = Quad<int>::rectangle(rect.a().x() + xsize, rect.a().y() + ysize, rect.a().x() + (xsize*2), rect.a().y() + (ysize*2));
+		Quad<int> bl = Quad<int>::rectangle(rect.a().x(), rect.a().y() + ysize, rect.a().x() + xsize, rect.a().y() + (ysize*2));
+		
+		MassInfo tlmass = big_mass(tl);
+		MassInfo trmass = big_mass(tr);
+		MassInfo brmass = big_mass(br);
+		MassInfo blmass = big_mass(bl);
+
+		std::vector<MassInfo> vec;
+		vec.push_back(tlmass);
+		vec.push_back(trmass);
+		vec.push_back(brmass);
+		vec.push_back(blmass);
+		std::sort(vec.begin(), vec.end(), &MapTunnelerBuilder::compare_massinfo);
+		
+		return vec.back();
+	}
+	
+	bool MapTunnelerBuilder::compare_massinfo(const MassInfo& a, const MassInfo& b)
+	{
+		return a.density < b.density;
 	}
 }

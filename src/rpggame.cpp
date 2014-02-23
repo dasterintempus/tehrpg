@@ -13,8 +13,8 @@ namespace teh
 	RPGGame::RPGGame(Application* parent, GameServer* server)
 		: _parent(parent), _server(server)
 	{
-		RPGWorld world(100, 100, 3);
-		MapTunnelerBuilder builder(20);
+		RPGWorld world(1000, 1000, 1);
+		MapTunnelerBuilder builder(1000, 25);
 		world.build(std::bind(&MapTunnelerBuilder::build, std::ref(builder), std::placeholders::_1, std::placeholders::_2));
 		world.savePNG("world.png");
 	}
