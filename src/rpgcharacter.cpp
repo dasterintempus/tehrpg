@@ -1,6 +1,9 @@
 #include "rpgcharacter.h"
 #include "rpggame.h"
 #include "rpgtile.h"
+#include "rpginventory.h"
+#include "rpgitemtype.h"
+#include "rpgiteminstance.h"
 #include "mysql.h"
 #include <sstream>
 
@@ -51,10 +54,15 @@ namespace teh
 		delete prep_stmt;
 		delete conn;
 		
-		return new RPGCharacter(id, parent);
+		RPGCharacter* character = parent->get_character(id);
+		
+		RPGInventory* inventory = character->add_inventory("backpack", 30);
+		//inventory->fill_out();
+		
+		return character;
 	}
 	
-	RPGCharacter::RPGCharacter(int id, RPGGame* parent)
+	RPGCharacter::RPGCharacter(unsigned int id, RPGGame* parent)
 		: _id(id), _parent(parent)
 	{
 		sql::Connection* conn = _parent->sql()->connect();
@@ -116,11 +124,11 @@ namespace teh
 		sql::Connection* conn = _parent->sql()->connect();
 		
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Tiles`.`id` FROM `Characters` JOIN `Tiles` WHERE `Characters`.`tile_id` = `Tiles`.`id` AND `Characters`.`id` = ?");
-		prep_stmt->setInt(1, id());
+		prep_stmt->setUInt(1, id());
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		res->next();
 		
-		RPGTile* tile = _parent->get_tile(res->getInt(1));
+		RPGTile* tile = _parent->get_tile(res->getUInt(1));
 		
 		delete res;
 		delete prep_stmt;
@@ -191,21 +199,66 @@ namespace teh
 		}
 		for (unsigned int n=0;n<exits.size();n++)
 		{
-			if (n == occupants.size()-1)
+			if (n == exits.size()-1)
 				sstream << exits[n] << "\n";
 			else
 				sstream << exits[n] << ", ";
 		}
-		if (exits.size() > 0)
+		//Items
+		RPGInventory* tileinv = location->get_inventory();
+		if (tileinv)
 		{
-			sstream << "\n";
+			std::vector<RPGItemInstance*> contents = tileinv->contents();
+			if (contents.size() > 0)
+			{
+				sstream << "There are the following items: ";
+			}
+			for (unsigned int n = 0; n < contents.size(); n++)
+			{
+				RPGItemInstance* item = contents[n];
+				RPGItemType* type = item->type();
+				if (n == contents.size()-1)
+					sstream << type->description() << " (" << item->id() << ")\n";
+				else
+					sstream << type->description() << " (" << item->id() << "), ";
+			}
 		}
 		return sstream.str();
 	}
 	
-	bool RPGCharacter::has_item(const std::string& name)
+	RPGInventory* RPGCharacter::get_inventory(const std::string& name)
 	{
-		return false;
+		sql::Connection* conn = _parent->sql()->connect();
+		
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Inventories` WHERE `char_id` = ? AND `name` = ?");
+		prep_stmt->setUInt(1, id());
+		prep_stmt->setString(2, name);
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		if (res->rowsCount() == 0)
+		{
+			delete res;
+			delete prep_stmt;
+			delete conn;
+			return 0;
+		}
+		
+		res->next();
+		RPGInventory* inventory = _parent->get_inventory(res->getUInt(1));
+		
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
+		return inventory;
+	}
+	
+	RPGInventory* RPGCharacter::add_inventory(const std::string& name, unsigned short int capacity)
+	{
+		if (get_inventory(name))
+			return 0; //Inventory already exists, error
+		
+		RPGInventory* inventory = RPGInventory::build(_parent, this, name, capacity);
+		return inventory;
 	}
 	
 	unsigned int RPGCharacter::id()
@@ -218,8 +271,8 @@ namespace teh
 		sql::Connection* conn = _parent->sql()->connect();
 		
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `Characters` SET `tile_id` = ? WHERE `id` = ?");
-		prep_stmt->setInt(1, destination->id());
-		prep_stmt->setInt(2, id());
+		prep_stmt->setUInt(1, destination->id());
+		prep_stmt->setUInt(2, id());
 		prep_stmt->execute();
 		
 		delete prep_stmt;

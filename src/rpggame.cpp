@@ -4,6 +4,9 @@
 #include "mysql.h"
 #include "rpgcharacter.h"
 #include "rpgtile.h"
+#include "rpginventory.h"
+#include "rpgitemtype.h"
+#include "rpgiteminstance.h"
 #include "rpgcommandhandler.h"
 #include "rpgworld.h"
 #include "rpgworldbuilder2.h"
@@ -21,11 +24,23 @@ namespace teh
 	
 	RPGGame::~RPGGame()
 	{
-		for (std::map<int, RPGCharacter*>::iterator i = _characters.begin(); i != _characters.end(); i++)
+		for (std::map<unsigned int, RPGCharacter*>::iterator i = _characters.begin(); i != _characters.end(); i++)
 		{
 			delete (*i).second;
 		}
-		for (std::map<int, RPGTile*>::iterator i = _tiles.begin(); i != _tiles.end(); i++)
+		for (std::map<unsigned int, RPGTile*>::iterator i = _tiles.begin(); i != _tiles.end(); i++)
+		{
+			delete (*i).second;
+		}
+		for (std::map<unsigned int, RPGInventory*>::iterator i = _inventories.begin(); i != _inventories.end(); i++)
+		{
+			delete (*i).second;
+		}
+		for (std::map<unsigned int, RPGItemType*>::iterator i = _itemtypes.begin(); i != _itemtypes.end(); i++)
+		{
+			delete (*i).second;
+		}
+		for (std::map<unsigned int, RPGItemInstance*>::iterator i = _iteminstances.begin(); i != _iteminstances.end(); i++)
 		{
 			delete (*i).second;
 		}
@@ -131,13 +146,13 @@ namespace teh
 		return 0;
 	}
 	
-	RPGCharacter* RPGGame::get_character(int id)
+	RPGCharacter* RPGGame::get_character(unsigned int id)
 	{
 		if (_characters.count(id) == 0)
 		{
 			sql::Connection* conn = sql()->connect();
 			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT * FROM `Characters` WHERE `id` = ?");
-			prep_stmt->setInt(1, id);
+			prep_stmt->setUInt(1, id);
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
 			{				
@@ -191,13 +206,13 @@ namespace teh
 		return out;
 	}
 	
-	RPGTile* RPGGame::get_tile(int id)
+	RPGTile* RPGGame::get_tile(unsigned int id)
 	{
 		if (_tiles.count(id) == 0)
 		{
 			sql::Connection* conn = sql()->connect();
 			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT * FROM `Tiles` WHERE `id` = ?");
-			prep_stmt->setInt(1, id);
+			prep_stmt->setUInt(1, id);
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
 			{
@@ -244,9 +259,121 @@ namespace teh
 		{
 			res->next();
 			unsigned int id = res->getInt(1);
+			
+			delete res;
+			delete prep_stmt;
+			delete conn;
+			
 			return get_tile(id);
 		}
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
 		return 0;
+	}
+	
+	RPGInventory* RPGGame::get_inventory(unsigned int id)
+	{
+		if (_inventories.count(id) == 0)
+		{
+			sql::Connection* conn = sql()->connect();
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT * FROM `Inventories` WHERE `id` = ?");
+			prep_stmt->setUInt(1, id);
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			if (res->rowsCount() == 1)
+			{
+				_inventories[id] = new RPGInventory(id, this);
+			}
+			else
+			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
+				
+				return 0;
+			}
+			delete res;
+			delete prep_stmt;
+			delete conn;
+		}
+		return _inventories[id];
+	}
+	
+	RPGItemType* RPGGame::get_itemtype(unsigned int id)
+	{
+		if (_itemtypes.count(id) == 0)
+		{
+			sql::Connection* conn = sql()->connect();
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT * FROM `ItemTypes` WHERE `id` = ?");
+			prep_stmt->setUInt(1, id);
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			if (res->rowsCount() == 1)
+			{
+				_itemtypes[id] = new RPGItemType(id, this);
+			}
+			else
+			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
+				return 0;
+			}
+			delete res;
+			delete prep_stmt;
+			delete conn;
+		}
+		return _itemtypes[id];
+	}
+	
+	RPGItemType* RPGGame::find_itemtype(const std::string& name)
+	{
+		sql::Connection* conn = sql()->connect();
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `ItemTypes` WHERE `name` = ?");
+		prep_stmt->setString(1, name);
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		if (res->rowsCount() == 1)
+		{
+			res->next();
+			unsigned int id = res->getInt(1);
+			
+			delete res;
+			delete prep_stmt;
+			delete conn;
+			
+			return get_itemtype(id);
+		}
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
+		return 0;
+	}
+	
+	RPGItemInstance* RPGGame::get_iteminstance(unsigned int id)
+	{
+		if (_iteminstances.count(id) == 0)
+		{
+			sql::Connection* conn = sql()->connect();
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT * FROM `ItemInstances` WHERE `id` = ?");
+			prep_stmt->setUInt(1, id);
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			if (res->rowsCount() == 1)
+			{
+				_iteminstances[id] = new RPGItemInstance(id, this);
+			}
+			else
+			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
+				return 0;
+			}
+			delete res;
+			delete prep_stmt;
+			delete conn;
+		}
+		return _iteminstances[id];
 	}
 	
 	MySQL* RPGGame::sql()

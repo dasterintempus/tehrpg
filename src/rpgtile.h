@@ -9,6 +9,7 @@ namespace teh
 {	
 	class RPGGame;
 	class RPGCharacter;
+	class RPGInventory;
 	
 	class RPGTile
 	{
@@ -43,6 +44,8 @@ namespace teh
 		
 			RPGTile* can_exit(const int& dx, const int& dy);
 			RPGTile* can_exit(const std::string& direction);
+			
+			RPGInventory* get_inventory();
 		private:
 			void locate();
 		

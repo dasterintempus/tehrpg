@@ -4,6 +4,9 @@
 #include "rpgtile.h"
 #include "mysql.h"
 #include "gameserver.h"
+#include "rpginventory.h"
+#include "rpgitemtype.h"
+#include "rpgiteminstance.h"
 
 namespace teh
 {
@@ -42,6 +45,11 @@ namespace teh
 		else if (first == "logout" && character)
 		{
 			cmd_logout(cmd);
+			return;
+		}
+		else if (first == "summonrock" && character)
+		{
+			cmd_summonrock(cmd);
 			return;
 		}
 		
@@ -93,7 +101,8 @@ namespace teh
 				first == "listchars" ||
 				first == "addtile" ||
 				first == "makechar" ||
-				first == "logout")
+				first == "logout" ||
+				first == "summonrock")
 				return true;
 		}
 		else if (cmd.prefix == '.' || cmd.prefix == '"' || cmd.prefix == '\'')
@@ -305,6 +314,29 @@ namespace teh
 	void RPGCommandHandler::cmd_logout(const Command& cmd)
 	{
 		_parent->logout(cmd.client);
+	}
+	
+	void RPGCommandHandler::cmd_summonrock(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		RPGTile* location = character->get_location();
+		
+		RPGInventory* ground = location->get_inventory();
+		
+		RPGItemType* rock = _parent->find_itemtype("rock");
+		
+		RPGItemInstance* instance = RPGItemInstance::build(_parent, ground, rock);
+		if (instance)
+		{
+			location->broadcast(character->name() + " casts Summon Rock! A rock appears.");
+		}
+		else
+		{
+			location->broadcast(character->name() + " casts Summon Rock! ...But it failed.");
+		}
 	}
 
 	void RPGCommandHandler::cmd_say(const Command& cmd)

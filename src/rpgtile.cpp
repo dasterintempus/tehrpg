@@ -1,6 +1,7 @@
 #include "rpgtile.h"
 #include "rpggame.h"
 #include "rpgcharacter.h"
+#include "rpginventory.h"
 #include "mysql.h"
 
 namespace teh
@@ -57,7 +58,11 @@ namespace teh
 		delete prep_stmt;
 		delete conn;
 		
-		return new RPGTile(id, parent);
+		RPGTile* tile = parent->get_tile(id);
+		
+		RPGInventory* inventory = RPGInventory::build(parent, tile);
+		
+		return tile;
 	}
 	
 	RPGTile::RPGTile(unsigned int id, RPGGame* parent)
@@ -268,6 +273,23 @@ namespace teh
 			return can_exit(1, 0);
 		
 		return 0;
+	}
+	
+	RPGInventory* RPGTile::get_inventory()
+	{
+		sql::Connection* conn = _parent->sql()->connect();
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Inventories` WHERE `tile_id` = ?");
+		prep_stmt->setInt(1, id());
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		res->next();
+		
+		RPGInventory* inventory = _parent->get_inventory(res->getUInt(1));
+		
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
+		return inventory;
 	}
 	
 	void RPGTile::locate()

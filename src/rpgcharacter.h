@@ -8,14 +8,15 @@ namespace teh
 {	
 	class RPGGame;
 	class RPGTile;
+	class RPGInventory;
 	
 	class RPGCharacter
 	{
 		public:
 			const static std::string StatNames[6];
-			static RPGCharacter* build(RPGGame* parent, const std::string& name, const std::string& username, RPGTile* room, const std::map<std::string, unsigned short int>& stats);	
+			static RPGCharacter* build(RPGGame* parent, const std::string& name, const std::string& username, RPGTile* room, const std::map<std::string, unsigned short int>& stats);
 		
-			RPGCharacter(int id, RPGGame* parent);
+			RPGCharacter(unsigned int id, RPGGame* parent);
 		
 			unsigned short int strength();
 			unsigned short int constitution();
@@ -33,7 +34,8 @@ namespace teh
 			RPGTile* move(const std::string& direction);
 			std::string look();
 		
-			bool has_item(const std::string& name);
+			RPGInventory* get_inventory(const std::string& name);
+			RPGInventory* add_inventory(const std::string& name, unsigned short int capacity);
 		
 			unsigned int id();
 		private:
