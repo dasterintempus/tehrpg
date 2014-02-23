@@ -7,13 +7,13 @@
 namespace teh
 {	
 	class RPGGame;
-	class RPGRoom;
+	class RPGTile;
 	
 	class RPGCharacter
 	{
 		public:
 			const static std::string StatNames[6];
-			static RPGCharacter* build(RPGGame* parent, const std::string& name, const std::string& username, RPGRoom* room, const std::map<std::string, unsigned short int>& stats);	
+			static RPGCharacter* build(RPGGame* parent, const std::string& name, const std::string& username, RPGTile* room, const std::map<std::string, unsigned short int>& stats);	
 		
 			RPGCharacter(int id, RPGGame* parent);
 		
@@ -26,16 +26,18 @@ namespace teh
 		
 			std::string name();
 		
-			RPGRoom* get_location();
+			RPGTile* get_location();
 		
 			void say(const std::string& msg);
 			void emote(const std::string& msg, bool possessive=false);
-			RPGRoom* move(const unsigned short int& axis, const short int& delta);
+			RPGTile* move(const std::string& direction);
 			std::string look();
+		
+			bool has_item(const std::string& name);
 		
 			unsigned int id();
 		private:
-			void update_location(RPGRoom* destination);
+			void update_location(RPGTile* destination);
 		
 			RPGGame* _parent;
 			unsigned int _id;

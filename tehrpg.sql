@@ -1,6 +1,10 @@
+DROP TABLE IF EXISTS `ItemInstances`;
+DROP TABLE IF EXISTS `ItemTypes`;
+DROP TABLE IF EXISTS `InventorySlots`;
+DROP TABLE IF EXISTS `Inventories`;
 DROP TABLE IF EXISTS `Characters`;
 DROP TABLE IF EXISTS `Walls`;
-DROP TABLE IF EXISTS `Rooms`;
+DROP TABLE IF EXISTS `Tiles`;
 DROP TABLE IF EXISTS `Users`;
 
 CREATE TABLE `Users` (
@@ -11,25 +15,22 @@ CREATE TABLE `Users` (
 	INDEX (`username`)
 ) ENGINE=InnoDB;
 
-CREATE TABLE `Rooms` (
+CREATE TABLE `Tiles` (
 	`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 	`xpos` BIGINT NOT NULL,
 	`ypos` BIGINT NOT NULL,
-	`zpos` TINYINT NOT NULL,
-	`description` TEXT NOT NULL,
-	UNIQUE KEY `position` (`xpos`, `ypos`, `zpos`),
+	`solid` BOOLEAN NOT NULL DEFAULT TRUE,
+	`description` TEXT NULL DEFAULT NULL,
+	UNIQUE KEY `position` (`xpos`, `ypos`),
 	INDEX (`xpos`),
-	INDEX (`ypos`),
-	INDEX (`zpos`)
+	INDEX (`ypos`)
 ) ENGINE=InnoDB;
 
 CREATE TABLE `Walls` (
 	`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-	`side` ENUM('up','north','west') NOT NULL,
-	`durability` INT,
-	`material` VARCHAR(255),
-	`room_id` INT UNSIGNED,
-	FOREIGN KEY (`room_id`) REFERENCES `Rooms` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+	`direction` ENUM('north', 'west') NOT NULL,
+	`tile_id` INT UNSIGNED NOT NULL,
+	FOREIGN KEY (`tile_id`) REFERENCES `Tiles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE `Characters` (
@@ -41,16 +42,49 @@ CREATE TABLE `Characters` (
 	`intelligence` TINYINT UNSIGNED NOT NULL,
 	`wisdom` TINYINT UNSIGNED NOT NULL,
 	`charisma` TINYINT UNSIGNED NOT NULL,
-	`user_id` INT UNSIGNED,
+	`user_id` INT UNSIGNED NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-	`room_id` INT UNSIGNED,
-	FOREIGN KEY (`room_id`) REFERENCES `Rooms` (`id`) ON UPDATE CASCADE,
+	`tile_id` INT UNSIGNED NOT NULL,
+	FOREIGN KEY (`tile_id`) REFERENCES `Tiles` (`id`) ON UPDATE CASCADE,
 	INDEX (`name`)
 ) ENGINE=InnoDB;
 
+CREATE TABLE `Inventories` (
+	`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	`name` VARCHAR(255) NULL,
+	`slotcapacity` SMALLINT UNSIGNED NULL,
+	`char_id` INT UNSIGNED NULL,
+	FOREIGN KEY (`char_id`) REFERENCES `Characters` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+	`tile_id` INT UNSIGNED NULL,
+	FOREIGN KEY (`tile_id`) REFERENCES `Tiles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `InventorySlots` (
+	`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	`position` INT UNSIGNED NOT NULL,
+	`quantity` INT UNSIGNED NULL,
+	`inv_id` INT UNSIGNED NOT NULL,
+	FOREIGN KEY (`inv_id`) REFERENCES `Inventories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+	UNIQUE KEY `inv_slot` (`position`, `inv_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `ItemTypes` (
+	`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	`name` VARCHAR(255) NOT NULL,
+	`description` VARCHAR(255) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE `ItemInstances` (
+	`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	`slot_id` INT UNSIGNED NOT NULL,
+	FOREIGN KEY (`slot_id` REFERENCES `InventorySlots` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+	`item_id` INT UNSIGNED NOT NULL,
+	FOREIGN KEY (`item_id` REFERENCES `ItemTypes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+) ENGINE=InnoDB;
+
 INSERT INTO `Users` VALUES (NULL, "root", 0x0, 65535);
-INSERT INTO `Users` VALUES (NULL, "dasterin", 0x7a3eff4c26e221298cab1d5dfb39ccd7ca8c199291e40c327feae06f91c3bb36e10a618328bf88d91e283bd3d1fe4acc14c2e50ae4b1c51ed754579c6a302173, 7);
-INSERT INTO `Users` VALUES (NULL, "t", 0xf1abcfb47c903b9c3aa787dff53347cc0adafea46d22b70c84169d5e87e78f3f6c7b41fd26ffaa078ae0715c6a5be1904aad7f7c6dd4deaf1e67d80dc92c9a1d, 7);
-INSERT INTO `Rooms` VALUES (NULL, 0,0,0, "A basic and empty room.");
-INSERT INTO `Characters` VALUES (NULL, "Dasterin", 10, 10, 10, 10, 10, 10, (SELECT `id` FROM `Users` WHERE `username` = "dasterin" LIMIT 1), (SELECT `id` FROM `Rooms` LIMIT 1));
-INSERT INTO `Characters` VALUES (NULL, "Jadael", 10, 10, 10, 10, 10, 10, (SELECT `id` FROM `Users` WHERE `username` = "t" LIMIT 1), (SELECT `id` FROM `Rooms` LIMIT 1));
+INSERT INTO `Users` VALUES (NULL, "dasterin", 0x7a3eff4c26e221298cab1d5dfb39ccd7ca8c199291e40c327feae06f91c3bb36e10a618328bf88d91e283bd3d1fe4acc14c2e50ae4b1c51ed754579c6a302173, 65535);
+INSERT INTO `Users` VALUES (NULL, "t", 0xf1abcfb47c903b9c3aa787dff53347cc0adafea46d22b70c84169d5e87e78f3f6c7b41fd26ffaa078ae0715c6a5be1904aad7f7c6dd4deaf1e67d80dc92c9a1d, 65535);
+INSERT INTO `Tiles` VALUES (NULL, 0, 0, FALSE, "A divine void.");
+--INSERT INTO `Characters` VALUES (NULL, "Dasterin", 10, 10, 8, 12, 10, 10, (SELECT `id` FROM `Users` WHERE `username` = "dasterin"), (SELECT `id` FROM `Tiles` ORDER BY `id` LIMIT 1));
+--INSERT INTO `Characters` VALUES (NULL, "Jadael", 8, 12, 10, 10, 10, 10, (SELECT `id` FROM `Users` WHERE `username` = "t"), (SELECT `id` FROM `Tiles` ORDER BY `id` LIMIT 1));

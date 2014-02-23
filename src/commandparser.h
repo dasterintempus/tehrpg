@@ -42,6 +42,8 @@ namespace teh
 			virtual ~CommandHandlerInterface();
 			virtual void handle_command(const Command& cmd) = 0;
 			virtual bool accepts_command(const Command& cmd) = 0;
+			virtual void handle_default(const Command& cmd);
+			virtual bool accepts_default();
 	};
 	
 	class CommandLexer

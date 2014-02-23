@@ -1,7 +1,7 @@
 #include "rpgcommandhandler.h"
 #include "rpggame.h"
 #include "rpgcharacter.h"
-#include "rpgroom.h"
+#include "rpgtile.h"
 #include "mysql.h"
 #include "gameserver.h"
 
@@ -29,9 +29,9 @@ namespace teh
 			cmd_listchars(cmd);
 			return;
 		}
-		else if (first == "addroom")
+		else if (first == "addtile")
 		{
-			cmd_addroom(cmd);
+			cmd_addtile(cmd);
 			return;
 		}
 		else if (first == "makechar" && !character)
@@ -91,7 +91,7 @@ namespace teh
 		{
 			if (first == "select" ||
 				first == "listchars" ||
-				first == "addroom" ||
+				first == "addtile" ||
 				first == "makechar" ||
 				first == "logout")
 				return true;
@@ -107,6 +107,21 @@ namespace teh
 			return true;
 		}
 		return false;
+	}
+	
+	void RPGCommandHandler::handle_default(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		
+		
+	}
+	
+	bool RPGCommandHandler::accepts_default()
+	{
+		return true;
 	}
 	
 	void RPGCommandHandler::cmd_select(const Command& cmd)
@@ -130,7 +145,7 @@ namespace teh
 				if (character)
 				{
 					_parent->message_client(cmd.client, "Selected character: " + cmd.arguments[1]);
-					RPGRoom* location = character->get_location();
+					RPGTile* location = character->get_location();
 					location->broadcast(character->name() + " appears magically!");
 				}
 				else
@@ -166,7 +181,7 @@ namespace teh
 		_parent->message_client(cmd.client, "---");
 	}
 	
-	void RPGCommandHandler::cmd_addroom(const Command& cmd)
+	void RPGCommandHandler::cmd_addtile(const Command& cmd)
 	{
 		GameClient* gc = _parent->get_client(cmd.client);
 		if (!gc)
@@ -174,26 +189,25 @@ namespace teh
 		
 		if ((gc->permissions() & GameClient::ContentAdminPermissions) == GameClient::ContentAdminPermissions)
 		{
-			if (cmd.arguments.size() == 5 && is_numeric<long int>(cmd.arguments[1]) && is_numeric<long int>(cmd.arguments[2]) && is_numeric<short int>(cmd.arguments[3]))
+			if (cmd.arguments.size() == 4 && is_numeric<long int>(cmd.arguments[1]) && is_numeric<long int>(cmd.arguments[2]))
 			{
 				long int x = to_numeric<long int>(cmd.arguments[1]);
 				long int y = to_numeric<long int>(cmd.arguments[2]);
-				short int z = to_numeric<short int>(cmd.arguments[3]);
-				std::string description = cmd.arguments[4];
-				RPGRoom* room = RPGRoom::build(_parent, x, y, z, description);
-				if (room)
+				std::string description = cmd.arguments[3];
+				RPGTile* tile = RPGTile::build(_parent, x, y, false, description);
+				if (tile)
 				{
-					_parent->message_client(cmd.client, "Room created.");
+					_parent->message_client(cmd.client, "Tile created.");
 				}
 				else
 				{
-					_parent->message_client(cmd.client, "Error creating room.");
+					_parent->message_client(cmd.client, "Error creating tile.");
 				}
 			}
 			else
 			{
-				_parent->message_client(cmd.client, "Invalid arguments for /addroom.");
-				_parent->message_client(cmd.client, "Usage: /addroom {x} {y} {z} {description}");
+				_parent->message_client(cmd.client, "Invalid arguments for /addtile.");
+				_parent->message_client(cmd.client, "Usage: /addtile {x} {y} {description}");
 			}
 		}
 		else
@@ -273,9 +287,9 @@ namespace teh
 			stats[downstatreal] -= 2;
 		}
 		
-		RPGRoom* room = _parent->get_room(1);
+		RPGTile* tile = _parent->get_tile(1);
 		
-		character = RPGCharacter::build(_parent, charname, username, room, stats);
+		character = RPGCharacter::build(_parent, charname, username, tile, stats);
 		if (character)
 		{
 			_parent->message_client(cmd.client, "Character created.");
@@ -338,7 +352,7 @@ namespace teh
 		if (!character)
 			return;
 		
-		RPGRoom* location = character->get_location();
+		RPGTile* location = character->get_location();
 		if (!location)
 		{
 			_parent->message_client(cmd.client, "Error! You are nowhere.");
@@ -346,7 +360,7 @@ namespace teh
 		else
 		{
 			std::stringstream sstream;
-			sstream << "You are at X: " << location->xpos() << " Y: " << location->ypos() << " Z: " << location->zpos();
+			sstream << "You are at X: " << location->xpos() << " Y: " << location->ypos();
 			_parent->message_client(cmd.client, sstream.str());
 		}
 	}
@@ -357,41 +371,21 @@ namespace teh
 		if (!character)
 			return;
 		
-		RPGRoom* destination = 0;
+		RPGTile* destination = 0;
 		if (cmd.arguments.size() != 2)
 		{
 			_parent->message_client(cmd.client, "Invalid usage of move command.");
-			_parent->message_client(cmd.client, "Usage: move {up|down|east|west|north|south}");
+			_parent->message_client(cmd.client, "Usage: move {east|west|north|south}");
 			return;
 		}
-		else if (cmd.arguments[1] == "up")
+		else if (cmd.arguments[1] == "east" || cmd.arguments[1] == "west" || cmd.arguments[1] == "north" || cmd.arguments[1] == "south")
 		{
-			destination = character->move(2, -1);
-		}
-		else if (cmd.arguments[1] == "down")
-		{
-			destination = character->move(2, 1);
-		}
-		else if (cmd.arguments[1] == "east")
-		{
-			destination = character->move(0, -1);
-		}
-		else if (cmd.arguments[1] == "west")
-		{
-			destination = character->move(0, 1);
-		}
-		else if (cmd.arguments[1] == "north")
-		{
-			destination = character->move(1, -1);
-		}
-		else if (cmd.arguments[1] == "south")
-		{
-			destination = character->move(0, 1);
+			destination = character->move(cmd.arguments[1]);
 		}
 		else
 		{
 			_parent->message_client(cmd.client, "Invalid usage of move command.");
-			_parent->message_client(cmd.client, "Usage: move {up|down|east|west|north|south}");
+			_parent->message_client(cmd.client, "Usage: move {east|west|north|south}");
 			return;
 		}
 		
@@ -403,7 +397,7 @@ namespace teh
 		}
 		else
 		{
-			_parent->message_client(cmd.client, "Unable to move that direction right now. (Room does not exist)");
+			_parent->message_client(cmd.client, "Unable to move that direction.");
 		}
 	}
 	

@@ -24,6 +24,16 @@ namespace teh
 		
 	}
 
+	void CommandHandlerInterface::handle_default(const Command& cmd)
+	{
+		
+	}
+	
+	bool CommandHandlerInterface::accepts_default()
+	{
+		return false;
+	}
+	
 	const std::string CommandLexer::PrefixChars = "\"'./:;!@#";
 	
 	char CommandLexer::GetPrefix(const std::string& input)
@@ -190,13 +200,27 @@ namespace teh
 		if (cmd.arguments.size() == 0)
 			return;
 		
+		bool handled = false;
 		for (std::list<CommandHandlerInterface*>::iterator i = _handlers.begin(); i != _handlers.end(); i++)
 		{
 			CommandHandlerInterface* handler = *i;
 			if (handler->accepts_command(cmd))
 			{
 				handler->handle_command(cmd);
+				handled = true;
 				//return;
+			}
+		}
+		if (handled)
+			return;
+		
+		for (std::list<CommandHandlerInterface*>::iterator i = _handlers.begin(); i != _handlers.end(); i++)
+		{
+			CommandHandlerInterface* handler = *i;
+			if (handler->accepts_default())
+			{
+				handler->handle_default(cmd);
+				return;
 			}
 		}
 	}

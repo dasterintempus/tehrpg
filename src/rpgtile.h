@@ -10,20 +10,26 @@ namespace teh
 	class RPGGame;
 	class RPGCharacter;
 	
-	class RPGRoom
+	class RPGTile
 	{
 		public:
-			static RPGRoom* build(RPGGame* parent, const long int& xpos, const long int& ypos, const short int& zpos, const std::string& description);
-			RPGRoom(unsigned int id, RPGGame* parent);
+			const static std::string northdir;
+			const static std::string southdir;
+			const static std::string eastdir;
+			const static std::string westdir;
 		
-			std::vector<RPGCharacter*> get_occupants();
+			static RPGTile* build(RPGGame* parent, const long int& xpos, const long int& ypos, bool solid = true, const std::string& description = "");
+			RPGTile(unsigned int id, RPGGame* parent);
+		
+			std::vector<RPGCharacter*> get_occupants(bool loggedin=true);
 			void broadcast(const std::string& msg);
 		
 			unsigned int id();
 		
 			long int xpos();
 			long int ypos();
-			short int zpos();
+		
+			bool solid();
 		
 			std::string description();
 		
@@ -31,13 +37,12 @@ namespace teh
 			bool can_exit_south();
 			bool can_exit_east();
 			bool can_exit_west();
-			bool can_exit_up();
-			bool can_exit_down();
 		
 			stringvector get_wall_sides();
 			stringvector get_exits();
 		
-			bool can_exit(const int& dx, const int& dy, const int& dz);
+			RPGTile* can_exit(const int& dx, const int& dy);
+			RPGTile* can_exit(const std::string& direction);
 		private:
 			void locate();
 		
@@ -46,7 +51,7 @@ namespace teh
 			std::string _description;
 			long int _xpos;
 			long int _ypos;
-			short int _zpos;
+			bool _solid;
 	};
 	
 }

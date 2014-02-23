@@ -3,7 +3,7 @@
 #include "gameserver.h"
 #include "mysql.h"
 #include "rpgcharacter.h"
-#include "rpgroom.h"
+#include "rpgtile.h"
 #include "rpgcommandhandler.h"
 #include "rpgworld.h"
 #include "rpgworldbuilder2.h"
@@ -13,10 +13,10 @@ namespace teh
 	RPGGame::RPGGame(Application* parent, GameServer* server)
 		: _parent(parent), _server(server)
 	{
-		RPGWorld world(1000, 1000, 1);
+		/*RPGWorld world(1000, 1000, 1);
 		MapTunnelerBuilder builder(1000, 25);
 		world.build(std::bind(&MapTunnelerBuilder::build, std::ref(builder), std::placeholders::_1, std::placeholders::_2));
-		world.savePNG("world.png");
+		world.savePNG("world.png");*/
 	}
 	
 	RPGGame::~RPGGame()
@@ -25,7 +25,7 @@ namespace teh
 		{
 			delete (*i).second;
 		}
-		for (std::map<int, RPGRoom*>::iterator i = _rooms.begin(); i != _rooms.end(); i++)
+		for (std::map<int, RPGTile*>::iterator i = _tiles.begin(); i != _tiles.end(); i++)
 		{
 			delete (*i).second;
 		}
@@ -88,7 +88,7 @@ namespace teh
 		RPGCharacter* character = _activecharacters[client];
 		_activecharacters.erase(client);
 		
-		RPGRoom* room = character->get_location();
+		RPGTile* room = character->get_location();
 		
 		room->broadcast(character->name() + " magically disappears!");
 	}
@@ -191,17 +191,17 @@ namespace teh
 		return out;
 	}
 	
-	RPGRoom* RPGGame::get_room(int id)
+	RPGTile* RPGGame::get_tile(int id)
 	{
-		if (_rooms.count(id) == 0)
+		if (_tiles.count(id) == 0)
 		{
 			sql::Connection* conn = sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT * FROM `Rooms` WHERE `id` = ?");
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT * FROM `Tiles` WHERE `id` = ?");
 			prep_stmt->setInt(1, id);
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
 			{
-				_rooms[id] = new RPGRoom(id, this);
+				_tiles[id] = new RPGTile(id, this);
 			}
 			else
 			{
@@ -214,41 +214,37 @@ namespace teh
 			delete prep_stmt;
 			delete conn;
 		}
-		return _rooms[id];
+		return _tiles[id];
 	}
 	
-	void RPGGame::locate_room(const long int& xpos, const long int& ypos, const short int& zpos, RPGRoom* room)
+	void RPGGame::locate_tile(const long int& xpos, const long int& ypos, RPGTile* room)
 	{
-		_roomscoords[xpos][ypos][zpos] = room;
+		_tilescoords[xpos][ypos] = room;
 	}
 	
-	RPGRoom* RPGGame::find_room(const long int& xpos, const long int& ypos, const short int& zpos)
+	RPGTile* RPGGame::find_tile(const long int& xpos, const long int& ypos)
 	{
-		if (!RPGGame::valid_coord(xpos, ypos, zpos))
+		if (!RPGGame::valid_coord(xpos, ypos))
 			return 0;
 		
-		if (_roomscoords.count(xpos))
+		if (_tilescoords.count(xpos))
 		{
-			if (_roomscoords[xpos].count(ypos))
+			if (_tilescoords[xpos].count(ypos))
 			{
-				if (_roomscoords[xpos][ypos].count(zpos))
-				{
-					return _roomscoords[xpos][ypos][zpos];
-				}
+				return _tilescoords[xpos][ypos];
 			}
 		}
 		
 		sql::Connection* conn = sql()->connect();
-		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Rooms` WHERE `xpos` = ? AND `ypos` = ? AND `zpos` = ?");
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Tiles` WHERE `xpos` = ? AND `ypos` = ?");
 		prep_stmt->setInt(1, xpos);
 		prep_stmt->setInt(2, ypos);
-		prep_stmt->setInt(3, zpos);
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		if (res->rowsCount() == 1)
 		{
 			res->next();
 			unsigned int id = res->getInt(1);
-			return get_room(id);
+			return get_tile(id);
 		}
 		return 0;
 	}
@@ -270,7 +266,7 @@ namespace teh
 		return _server->get_client(client);
 	}
 	
-	bool RPGGame::valid_coord(const long int& xpos, const long int& ypos, const short int& zpos)
+	bool RPGGame::valid_coord(const long int& xpos, const long int& ypos)
 	{
 		if (xpos < 0)
 		{
@@ -290,16 +286,6 @@ namespace teh
 		else
 		{
 			if (ypos >= RPGGame::WorldYSize)
-				return false;
-		}
-		if (zpos < 0)
-		{
-			if (zpos < -RPGGame::WorldZSize)
-				return false;
-		}
-		else
-		{
-			if (zpos >= RPGGame::WorldZSize)
 				return false;
 		}
 		return true;

@@ -1,6 +1,6 @@
 #include "rpgcharacter.h"
 #include "rpggame.h"
-#include "rpgroom.h"
+#include "rpgtile.h"
 #include "mysql.h"
 #include <sstream>
 
@@ -8,7 +8,7 @@ namespace teh
 {
 	const std::string RPGCharacter::StatNames[6] = {"strength", "constitution", "dexterity", "intelligence", "wisdom", "charisma"};
 	
-	RPGCharacter* RPGCharacter::build(RPGGame* parent, const std::string& name, const std::string& username, RPGRoom* room, const std::map<std::string, unsigned short int>& stats)
+	RPGCharacter* RPGCharacter::build(RPGGame* parent, const std::string& name, const std::string& username, RPGTile* tile, const std::map<std::string, unsigned short int>& stats)
 	{
 		for (unsigned int n=0;n < 6;n++)
 		{
@@ -29,7 +29,7 @@ namespace teh
 		prep_stmt->setUInt(6, stats.at("wisdom"));
 		prep_stmt->setUInt(7, stats.at("charisma"));
 		prep_stmt->setString(8, username);
-		prep_stmt->setUInt(9, room->id());
+		prep_stmt->setUInt(9, tile->id());
 		try
 		{
 			prep_stmt->execute();
@@ -111,22 +111,22 @@ namespace teh
 		return _name;
 	}
 	
-	RPGRoom* RPGCharacter::get_location()
+	RPGTile* RPGCharacter::get_location()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
-		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Rooms`.`id` FROM `Characters` JOIN `Rooms` WHERE `Characters`.`room_id` = `Rooms`.`id` AND `Characters`.`id` = ?");
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Tiles`.`id` FROM `Characters` JOIN `Tiles` WHERE `Characters`.`tile_id` = `Tiles`.`id` AND `Characters`.`id` = ?");
 		prep_stmt->setInt(1, id());
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		res->next();
 		
-		RPGRoom* room = _parent->get_room(res->getInt(1));
+		RPGTile* tile = _parent->get_tile(res->getInt(1));
 		
 		delete res;
 		delete prep_stmt;
 		delete conn;
 		
-		return room;
+		return tile;
 	}
 	
 	void RPGCharacter::say(const std::string& msg)
@@ -147,45 +147,16 @@ namespace teh
 		
 	}
 	
-	RPGRoom* RPGCharacter::move(const unsigned short int& axis, const short int& delta)
-	{
-		if (abs(delta) != 1)
-			return 0;
-		if (axis > 2)
-			return 0;
+	RPGTile* RPGCharacter::move(const std::string& direction)
+	{		
+		RPGTile* location = get_location();
 		
-		RPGRoom* location = get_location();
-		long int xpos = location->xpos();
-		long int ypos = location->ypos();
-		long int zpos = location->ypos();
-		if (axis == 0)
-		{
-			//x axis
-			xpos += delta;
-		}
-		else if (axis == 1)
-		{
-			//y axis
-			ypos += delta;
-		}
-		else if (axis == 2)
-		{
-			//z axis
-			zpos += delta;
-		}
-		
-		if (!RPGGame::valid_coord(xpos, ypos, zpos))
+		RPGTile* destination = location->can_exit(direction);
+		if (!destination)
 		{
 			return 0;
 		}
-		
-		if (!location->can_exit(xpos - location->xpos(), ypos - location->ypos(), zpos - location->zpos()))
-		{
-			return 0;
-		}
-		
-		RPGRoom* destination = _parent->find_room(xpos, ypos, zpos);
-		if (destination)
+		else
 		{
 			update_location(destination);
 		}
@@ -195,7 +166,7 @@ namespace teh
 	std::string RPGCharacter::look()
 	{
 		std::stringstream sstream;
-		RPGRoom* location = get_location();
+		RPGTile* location = get_location();
 		sstream << "You look around and see: " << location->description() << "\n";
 		//get who else is here
 		std::vector<RPGCharacter*> occupants = location->get_occupants();
@@ -232,16 +203,21 @@ namespace teh
 		return sstream.str();
 	}
 	
+	bool RPGCharacter::has_item(const std::string& name)
+	{
+		return false;
+	}
+	
 	unsigned int RPGCharacter::id()
 	{
 		return _id;
 	}
 	
-	void RPGCharacter::update_location(RPGRoom* destination)
+	void RPGCharacter::update_location(RPGTile* destination)
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
-		sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `Characters` SET `room_id` = ? WHERE `id` = ?");
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `Characters` SET `tile_id` = ? WHERE `id` = ?");
 		prep_stmt->setInt(1, destination->id());
 		prep_stmt->setInt(2, id());
 		prep_stmt->execute();
