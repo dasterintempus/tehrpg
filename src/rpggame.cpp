@@ -5,13 +5,18 @@
 #include "rpgcharacter.h"
 #include "rpgroom.h"
 #include "rpgcommandhandler.h"
+#include "rpgworld.h"
+#include "rpgworldbuilder2.h"
 
 namespace teh
 {
 	RPGGame::RPGGame(Application* parent, GameServer* server)
 		: _parent(parent), _server(server)
 	{
-		
+		RPGWorld world(100, 100, 3);
+		MapTunnelerBuilder builder(20);
+		world.build(std::bind(&MapTunnelerBuilder::build, std::ref(builder), std::placeholders::_1, std::placeholders::_2));
+		world.savePNG("world.png");
 	}
 	
 	RPGGame::~RPGGame()

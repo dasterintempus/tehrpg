@@ -25,7 +25,7 @@ CREATE TABLE `Rooms` (
 
 CREATE TABLE `Walls` (
 	`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-	`side` ENUM('up','north','east') NOT NULL,
+	`side` ENUM('up','north','west') NOT NULL,
 	`durability` INT,
 	`material` VARCHAR(255),
 	`room_id` INT UNSIGNED,

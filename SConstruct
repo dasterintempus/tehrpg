@@ -16,6 +16,8 @@ env = Environment(ENV = os.environ)
 env.Replace(CC = "clang")
 env.Replace(CXX = "clang++")
 
+env.Append(CXXFLAGS = "-std=c++11")
+
 if ARGUMENTS.get("verbose", 0):
 	env.Append(CXXFLAGS = "-v")
 

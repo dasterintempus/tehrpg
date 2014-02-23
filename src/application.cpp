@@ -50,7 +50,7 @@ namespace teh
 	
 	int Application::init(int argc, char** argv)
 	{
-		srand(time(0));
+		srand(100);
 		
 		po::options_description generic_opts("Allowed options");
 		generic_opts.add_options()
