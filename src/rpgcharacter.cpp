@@ -208,22 +208,141 @@ namespace teh
 		RPGInventory* tileinv = location->get_inventory();
 		if (tileinv)
 		{
-			std::vector<RPGItemInstance*> contents = tileinv->contents();
-			if (contents.size() > 0)
-			{
-				sstream << "There are the following items: ";
-			}
-			for (unsigned int n = 0; n < contents.size(); n++)
-			{
-				RPGItemInstance* item = contents[n];
-				RPGItemType* type = item->type();
-				if (n == contents.size()-1)
-					sstream << type->description() << " (" << item->id() << ")\n";
-				else
-					sstream << type->description() << " (" << item->id() << "), ";
-			}
+			sstream << tileinv->describe_contents() << "\n";
 		}
 		return sstream.str();
+	}
+	
+	std::string RPGCharacter::pickup(const std::string& target, unsigned int targetn, const std::string& destination)
+	{
+		RPGTile* location = get_location();
+		RPGInventory* tileinv = location->get_inventory();
+		RPGItemInstance* targetitem = 0;
+		std::map<RPGItemType*, unsigned int> typecounters;
+		std::vector<RPGItemInstance*> contents = tileinv->contents();
+		bool multiple = false;
+		for (unsigned int n = 0; n < contents.size(); n++)
+		{
+			RPGItemInstance* item = contents[n];
+			RPGItemType* type = item->type();
+			
+			if (typecounters.count(type)==0)
+				typecounters[type] = 0;
+			
+			typecounters[type]++;
+
+			if (target == type->name())
+			{
+				if (typecounters[type] > 1)
+					multiple = true;
+				if (targetn > 0)
+				{
+					if (targetn == typecounters[type])
+					{
+						targetitem = item;
+					}
+				}
+				else
+				{
+					targetitem = item;
+				}
+			}
+		}
+		
+		if (targetitem)
+		{
+			RPGInventory* myinv = get_inventory(destination);
+			if (myinv)
+			{
+				if (myinv->acquire(targetitem))
+				{
+					if (multiple)
+					{
+						location->broadcast(name() + " picked up a " + target + ".");
+						return "You picked up a " + target + " and put in your " + destination + ".";
+					}
+					else
+					{
+						location->broadcast(name() + " picked up the " + target + ".");
+						return "You picked up the " + target + " and put in your " + destination + ".";
+					}
+				}
+				else
+				{
+					return "You can't put the " + target + " in your " + destination + ".";
+				}
+			}
+			else
+			{
+				return "You don't have an inventory named '" + destination + "'.";
+			}
+		}
+		return "Unable to find any item named '" + target + "'.";
+	}
+	
+	std::string RPGCharacter::drop(const std::string& target, unsigned int targetn, const std::string& origin)
+	{
+		RPGInventory* inv = get_inventory(origin);
+		if (!inv)
+		{
+			return "You don't have an inventory named '" + origin + "'.";
+		}
+		
+		RPGItemInstance* targetitem = 0;
+		std::map<RPGItemType*, unsigned int> typecounters;
+		std::vector<RPGItemInstance*> contents = inv->contents();
+		bool multiple = false;
+		for (unsigned int n = 0; n < contents.size(); n++)
+		{
+			RPGItemInstance* item = contents[n];
+			RPGItemType* type = item->type();
+			
+			if (typecounters.count(type)==0)
+				typecounters[type] = 0;
+			
+			typecounters[type]++;
+
+			if (target == type->name())
+			{
+				if (typecounters[type] > 1)
+					multiple = true;
+				if (targetn > 0)
+				{
+					if (targetn == typecounters[type])
+					{
+						targetitem = item;
+					}
+				}
+				else
+				{
+					targetitem = item;
+				}
+			}
+		}
+		
+		if (targetitem)
+		{
+			RPGTile* location = get_location();
+			RPGInventory* tileinv = location->get_inventory();
+			if (tileinv->acquire(targetitem))
+			{
+				if (multiple)
+				{
+					location->broadcast(name() + " dropped a " + target + " on the ground.");
+					return "You dropped a " + target + " from your " + origin + ".";
+				}
+				else
+				{
+					location->broadcast(name() + " dropped a " + target + " on the ground.");
+					return "You dropped the " + target + " from your " + origin + ".";
+				}
+			}
+			else
+			{
+				return "You can't drop the " + target + ".";
+			}
+		}
+		return "Unable to find any item named '" + target + "'.";
 	}
 	
 	RPGInventory* RPGCharacter::get_inventory(const std::string& name)
@@ -259,6 +378,28 @@ namespace teh
 		
 		RPGInventory* inventory = RPGInventory::build(_parent, this, name, capacity);
 		return inventory;
+	}
+	
+	std::vector<RPGInventory*> RPGCharacter::all_inventories()
+	{
+		std::vector<RPGInventory*> out;
+		
+		sql::Connection* conn = _parent->sql()->connect();
+		
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Inventories` WHERE `char_id` = ?");
+		prep_stmt->setUInt(1, id());
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		
+		while (res->next())
+		{
+			out.push_back(_parent->get_inventory(res->getUInt(1)));
+		}
+		
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
+		return out;
 	}
 	
 	unsigned int RPGCharacter::id()

@@ -4,6 +4,9 @@
 #include "rpgtile.h"
 #include "rpgcharacter.h"
 #include "rpgiteminstance.h"
+#include "rpgitemtype.h"
+
+#include <sstream>
 
 namespace teh
 {
@@ -178,5 +181,63 @@ namespace teh
 		if (space_used() > capacity())
 			return 0;
 		return capacity() - space_used();
+	}
+	
+	bool RPGInventory::acquire(RPGItemInstance* item)
+	{
+		if (capacity() != 0 && space_remaining() < item->type()->size())
+			 return false;
+		
+		sql::Connection* conn = _parent->sql()->connect();
+		
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `ItemInstances` SET `inv_id` = ? WHERE `id` = ?");
+		prep_stmt->setUInt(1, id());
+		prep_stmt->setUInt(2, item->id());
+		
+		try
+		{
+			prep_stmt->execute();
+		}
+		catch (sql::SQLException& e)
+		{
+			delete prep_stmt;
+			delete conn;
+			return false;
+		}
+		
+		delete prep_stmt;
+		delete conn;
+		return true;
+	}
+	
+	std::string RPGInventory::describe_contents()
+	{
+		std::stringstream sstream;
+		std::map<RPGItemType*, unsigned int> typecounters;
+		std::vector<RPGItemInstance*> c = contents();
+		if (c.size() > 0)
+		{
+			sstream << "There are the following items: ";
+		}
+		else
+		{
+			sstream << "There are no items.";
+		}
+		for (unsigned int n = 0; n < c.size(); n++)
+		{
+			RPGItemInstance* item = c[n];
+			RPGItemType* type = item->type();
+			
+			if (typecounters.count(type)==0)
+				typecounters[type] = 0;
+			
+			typecounters[type]++;
+	
+			if (n == c.size() - 1)
+				sstream << type->description() << " (" << typecounters[type] << ").";
+			else
+				sstream << type->description() << " (" << typecounters[type] << "), ";
+		}
+		return sstream.str();
 	}
 }

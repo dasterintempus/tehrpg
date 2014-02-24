@@ -33,9 +33,12 @@ namespace teh
 			void emote(const std::string& msg, bool possessive=false);
 			RPGTile* move(const std::string& direction);
 			std::string look();
+			std::string pickup(const std::string& target, unsigned int targetn=0, const std::string& destination="backpack");
+			std::string drop(const std::string& target, unsigned int targetn=0, const std::string& origin="backpack");
 		
 			RPGInventory* get_inventory(const std::string& name);
 			RPGInventory* add_inventory(const std::string& name, unsigned short int capacity);
+			std::vector<RPGInventory*> all_inventories();
 		
 			unsigned int id();
 		private:

@@ -81,6 +81,21 @@ namespace teh
 			cmd_emote(cmd);
 			return;
 		}
+		else if (first == "pickup" || first == "get")
+		{
+			cmd_pickup(cmd);
+			return;
+		}
+		else if (first == "drop")
+		{
+			cmd_drop(cmd);
+			return;
+		}
+		else if (first == "inventory" || cmd.prefix == '@')
+		{
+			cmd_inventory(cmd);
+			return;
+		}
 	}
 	
 	bool RPGCommandHandler::accepts_command(const Command& cmd)
@@ -92,7 +107,11 @@ namespace teh
 				first == "where" ||
 				first == "move" ||
 				first == "look" ||
-				first == "emote")
+				first == "emote" ||
+				first == "pickup" ||
+				first == "get" ||
+				first == "drop" ||
+				first == "inventory")
 				return true;
 		}
 		else if (cmd.prefix == '/')
@@ -113,6 +132,11 @@ namespace teh
 		else if (cmd.prefix == ':')
 		{
 			//emote alias
+			return true;
+		}
+		else if (cmd.prefix == '@')
+		{
+			//inventory alias
 			return true;
 		}
 		return false;
@@ -471,6 +495,157 @@ namespace teh
 		else
 		{
 			character->emote(stringjoin(cmd.arguments));
+		}
+	}
+	
+	void RPGCommandHandler::cmd_pickup(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		if (cmd.arguments.size() == 4)
+		{
+			std::string target = cmd.arguments[1];
+			if (!is_numeric<unsigned int>(cmd.arguments[2]))
+			{
+				_parent->message_client(cmd.client, "Invalid usage of pickup command.");
+				_parent->message_client(cmd.client, "Usage: pickup {itemname} [#] [inventoryname]");
+				return;
+			}
+			unsigned int n = to_numeric<unsigned int>(cmd.arguments[2]);
+			std::string destination = cmd.arguments[3];
+			
+			std::string message = character->pickup(target, n, destination);
+			_parent->message_client(cmd.client, message);
+		}
+		else if (cmd.arguments.size() == 3)
+		{
+			std::string target = cmd.arguments[1];
+			if (!is_numeric<unsigned int>(cmd.arguments[2]))
+			{
+				unsigned int n = 1;
+				std::string destination = cmd.arguments[2];
+				std::string message = character->pickup(target, n, destination);
+				_parent->message_client(cmd.client, message);
+			}
+			else
+			{
+				unsigned int n = to_numeric<unsigned int>(cmd.arguments[2]);
+				std::string message = character->pickup(target, n);
+				_parent->message_client(cmd.client, message);
+			}
+		}
+		else if (cmd.arguments.size() == 2)
+		{
+			std::string target = cmd.arguments[1];
+			std::string message = character->pickup(target);
+			_parent->message_client(cmd.client, message);
+		}
+		else
+		{
+			_parent->message_client(cmd.client, "Invalid usage of pickup command.");
+			_parent->message_client(cmd.client, "Usage: pickup {itemname} [#] [inventoryname]");
+			return;
+		}
+	}
+	
+	void RPGCommandHandler::cmd_drop(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		if (cmd.arguments.size() == 4)
+		{
+			std::string target = cmd.arguments[1];
+			if (!is_numeric<unsigned int>(cmd.arguments[2]))
+			{
+				_parent->message_client(cmd.client, "Invalid usage of drop command.");
+				_parent->message_client(cmd.client, "Usage: drop {itemname} [#] [inventoryname]");
+				return;
+			}
+			unsigned int n = to_numeric<unsigned int>(cmd.arguments[2]);
+			std::string destination = cmd.arguments[3];
+			
+			std::string message = character->drop(target, n, destination);
+			_parent->message_client(cmd.client, message);
+		}
+		else if (cmd.arguments.size() == 3)
+		{
+			std::string target = cmd.arguments[1];
+			if (!is_numeric<unsigned int>(cmd.arguments[2]))
+			{
+				unsigned int n = 1;
+				std::string destination = cmd.arguments[2];
+				std::string message = character->drop(target, n, destination);
+				_parent->message_client(cmd.client, message);
+			}
+			else
+			{
+				unsigned int n = to_numeric<unsigned int>(cmd.arguments[2]);
+				std::string message = character->drop(target, n);
+				_parent->message_client(cmd.client, message);
+			}
+		}
+		else if (cmd.arguments.size() == 2)
+		{
+			std::string target = cmd.arguments[1];
+			std::string message = character->drop(target);
+			_parent->message_client(cmd.client, message);
+		}
+		else
+		{
+			_parent->message_client(cmd.client, "Invalid usage of drop command.");
+			_parent->message_client(cmd.client, "Usage: drop {itemname} [#] [inventoryname]");
+			return;
+		}
+	}
+	
+	void RPGCommandHandler::cmd_inventory(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		std::string invname = "";
+		if (cmd.arguments.size() == 2 && cmd.prefix == '\0')
+		{
+			invname = cmd.arguments[1];
+		}
+		else if (cmd.arguments.size() == 1 && cmd.prefix == '@')
+		{
+			invname = cmd.arguments[0];
+		}
+		else if (cmd.arguments.size() != 1 && cmd.prefix == '@')
+		{
+			_parent->message_client(cmd.client, "Invalid usage of inventory command.");
+			_parent->message_client(cmd.client, "Usage: inventory [inventoryname]");
+			_parent->message_client(cmd.client, "Usage: @{inventoryname}");
+			return;
+		}
+		
+		if (invname != "")
+		{
+			RPGInventory* inv = character->get_inventory(invname);
+			if (!inv)
+			{
+				_parent->message_client(cmd.client, "You don't have an inventory named '" + invname + "'.");
+				return;
+			}
+			std::string message = "You look in your inventory '" + invname + "':";
+			message += inv->describe_contents();
+			_parent->message_client(cmd.client, message);
+		}
+		else
+		{
+			std::vector<RPGInventory*> inventories = character->all_inventories();
+			for (unsigned int n = 0;n < inventories.size();n++)
+			{
+				std::string message = "You look in your inventory '" + inventories[n]->name() + "': ";
+				message += inventories[n]->describe_contents();
+				_parent->message_client(cmd.client, message);
+			}
 		}
 	}
 }

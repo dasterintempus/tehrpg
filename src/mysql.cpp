@@ -36,7 +36,7 @@ namespace teh
 		{
 			changed = prep_stmt->executeUpdate();
 		}
-		catch (sql::SQLException e)
+		catch (sql::SQLException& e)
 		{
 			delete prep_stmt;
 			delete conn;

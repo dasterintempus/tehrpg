@@ -31,7 +31,8 @@ namespace teh
 			unsigned short int space_used();
 			unsigned short int space_remaining();
 		
-			void fill_out();
+			bool acquire(RPGItemInstance* item);
+			std::string describe_contents();
 		private:
 			unsigned int _id;
 			RPGGame* _parent;

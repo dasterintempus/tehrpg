@@ -23,12 +23,15 @@ namespace teh
 			void cmd_makechar(const Command& cmd);
 			void cmd_logout(const Command& cmd);
 			void cmd_summonrock(const Command& cmd);
-		
+			
 			void cmd_say(const Command& cmd);
 			void cmd_where(const Command& cmd);
 			void cmd_move(const Command& cmd);
 			void cmd_look(const Command& cmd);
 			void cmd_emote(const Command& cmd);
+			void cmd_pickup(const Command& cmd);
+			void cmd_drop(const Command& cmd);
+			void cmd_inventory(const Command& cmd);
 		
 			RPGGame* _parent;
 	};
