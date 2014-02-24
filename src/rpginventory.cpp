@@ -185,8 +185,18 @@ namespace teh
 	
 	bool RPGInventory::acquire(RPGItemInstance* item)
 	{
-		if (capacity() != 0 && space_remaining() < item->type()->size())
-			 return false;
+		if (capacity() != 0)
+		{
+			if (space_remaining() < item->type()->size())
+				return false;
+		}
+		
+		RPGCharacter* c = character();
+		if (c)
+		{
+			if (c->carrying_mass() + item->type()->mass() > c->max_carrying_mass())
+				return false;
+		}
 		
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -234,9 +244,9 @@ namespace teh
 			typecounters[type]++;
 	
 			if (n == c.size() - 1)
-				sstream << type->description() << " (" << typecounters[type] << ").";
+				sstream << type->summary() << " (" << typecounters[type] << ").";
 			else
-				sstream << type->description() << " (" << typecounters[type] << "), ";
+				sstream << type->summary() << " (" << typecounters[type] << "), ";
 		}
 		return sstream.str();
 	}

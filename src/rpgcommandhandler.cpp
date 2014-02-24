@@ -8,6 +8,8 @@
 #include "rpgitemtype.h"
 #include "rpgiteminstance.h"
 
+#include <sstream>
+
 namespace teh
 {
 
@@ -633,19 +635,25 @@ namespace teh
 				_parent->message_client(cmd.client, "You don't have an inventory named '" + invname + "'.");
 				return;
 			}
-			std::string message = "You look in your inventory '" + invname + "':";
-			message += inv->describe_contents();
-			_parent->message_client(cmd.client, message);
+			std::stringstream message;
+			message << "You look in your inventory '" << invname << "':";
+			message << inv->describe_contents() << "\n";
+			message << "It has " << inv->space_remaining() << " cubic meters of space left.\n";
+			message << "You are carrying " << character->carrying_mass() << "/" << character->max_carrying_mass() << " kg.";
+			_parent->message_client(cmd.client, message.str());
 		}
 		else
 		{
+			std::stringstream message;
 			std::vector<RPGInventory*> inventories = character->all_inventories();
 			for (unsigned int n = 0;n < inventories.size();n++)
 			{
-				std::string message = "You look in your inventory '" + inventories[n]->name() + "': ";
-				message += inventories[n]->describe_contents();
-				_parent->message_client(cmd.client, message);
+				message << "You look in your inventory '" << inventories[n]->name() << "': ";
+				message << inventories[n]->describe_contents() << "\n";
+				message << "It has " << inventories[n]->space_remaining() << " cubic meters of space left.\n";
 			}
+			message << "You are carrying " << character->carrying_mass() << "/" << character->max_carrying_mass() << " kg.";
+			_parent->message_client(cmd.client, message.str());
 		}
 	}
 }

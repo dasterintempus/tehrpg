@@ -39,6 +39,9 @@ namespace teh
 			RPGInventory* get_inventory(const std::string& name);
 			RPGInventory* add_inventory(const std::string& name, unsigned short int capacity);
 			std::vector<RPGInventory*> all_inventories();
+			
+			int carrying_mass();
+			int max_carrying_mass();
 		
 			unsigned int id();
 		private:

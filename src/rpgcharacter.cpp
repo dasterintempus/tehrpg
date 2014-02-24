@@ -402,6 +402,32 @@ namespace teh
 		return out;
 	}
 	
+	int RPGCharacter::carrying_mass()
+	{
+		int mass = 0;
+		
+		sql::Connection* conn = _parent->sql()->connect();
+		
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT SUM(`ItemTypes`.`mass`) FROM `Inventories` JOIN `ItemInstances` JOIN `ItemTypes` WHERE `Inventories`.`id` = `ItemInstances`.`inv_id` AND `ItemInstances`.`type_id` = `ItemTypes`.`id` AND `Inventories`.`char_id` = ?");
+		prep_stmt->setUInt(1, id());
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		
+		res->next();
+		
+		mass = res->getInt(1);
+		
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
+		return mass;
+	}
+	
+	int RPGCharacter::max_carrying_mass()
+	{
+		return 100;
+	}
+	
 	unsigned int RPGCharacter::id()
 	{
 		return _id;

@@ -62,8 +62,10 @@ CREATE TABLE `Inventories` (
 CREATE TABLE `ItemTypes` (
 	`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 	`name` VARCHAR(255) UNIQUE NOT NULL,
-	`description` VARCHAR(255) NOT NULL,
-	`size` SMALLINT UNSIGNED NOT NULL
+	`summary` VARCHAR(255) NOT NULL,
+	`description` TEXT NOT NULL,
+	`size` SMALLINT UNSIGNED NOT NULL,
+	`mass` SMALLINT UNSIGNED NOT NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE `ItemInstances` (
@@ -79,4 +81,4 @@ INSERT INTO `Users` VALUES (NULL, "dasterin", 0x7a3eff4c26e221298cab1d5dfb39ccd7
 INSERT INTO `Users` VALUES (NULL, "t", 0xf1abcfb47c903b9c3aa787dff53347cc0adafea46d22b70c84169d5e87e78f3f6c7b41fd26ffaa078ae0715c6a5be1904aad7f7c6dd4deaf1e67d80dc92c9a1d, 65535);
 INSERT INTO `Tiles` VALUES (NULL, 0, 0, FALSE, "A divine void.");
 INSERT INTO `Inventories` VALUES (NULL, NULL, DEFAULT, NULL, (SELECT `id` FROM `Tiles` ORDER BY `id` LIMIT 1));
-INSERT INTO `ItemTypes` VALUES (NULL, "rock", "A small @rock.", 1);
+INSERT INTO `ItemTypes` VALUES (NULL, "rock", "A small *rock*", "An average sized *rock*. Were you expecting otherwise?", 1, 1);
