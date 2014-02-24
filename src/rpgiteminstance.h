@@ -4,21 +4,24 @@
 
 namespace teh
 {
-	class RPGGame;
-	class RPGInventory;
-	class RPGItemType;
+namespace RPG
+{
+	class Game;
+	class Inventory;
+	class ItemType;
 	
-	class RPGItemInstance
+	class ItemInstance
 	{
 		public:
-			static RPGItemInstance* build(RPGGame* parent, RPGInventory* inv, RPGItemType* type);
-			RPGItemInstance(unsigned int id, RPGGame* parent);
+			static ItemInstance* build(Game* parent, Inventory* inv, ItemType* type);
+			ItemInstance(unsigned int id, Game* parent);
 		
 			unsigned int id();
-			RPGInventory* container();
-			RPGItemType* type();
+			Inventory* container();
+			ItemType* type();
 		private:
 			unsigned int _id;
-			RPGGame* _parent;
+			Game* _parent;
 	};
+}
 }

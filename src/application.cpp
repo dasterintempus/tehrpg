@@ -114,8 +114,8 @@ namespace teh
 
 		_mysql = new MySQL(_vm["sqlhost"].as<std::string>(), _vm["sqlport"].as<unsigned short int>(), _vm["sqluser"].as<std::string>(), _vm["sqlpass"].as<std::string>(), _vm["sqldb"].as<std::string>());
 	
-		_rpggame = new RPGGame(this, _gameserver);
-		_rpggamethread = new sf::Thread(&RPGGame::start, _rpggame);
+		_rpggame = new RPG::Game(this, _gameserver);
+		_rpggamethread = new sf::Thread(&RPG::Game::start, _rpggame);
 	
 		_commandparser = new CommandParser();
 
@@ -185,7 +185,7 @@ namespace teh
 		return _mysql;
 	}
 	
-	RPGGame* Application::rpg()
+	RPG::Game* Application::rpg()
 	{
 		return _rpggame;
 	}

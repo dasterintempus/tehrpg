@@ -5,6 +5,7 @@
 #include "rpgworld.h"
 #include "vec2.h"
 
+/*
 namespace teh
 {
 	struct MapTunneler
@@ -45,3 +46,4 @@ namespace teh
 			unsigned int _densitycheckradius;
 	};
 }
+*/

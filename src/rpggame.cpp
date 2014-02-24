@@ -13,59 +13,61 @@
 
 namespace teh
 {
-	RPGGame::RPGGame(Application* parent, GameServer* server)
+namespace RPG
+{
+	Game::Game(Application* parent, GameServer* server)
 		: _parent(parent), _server(server)
 	{
-		/*RPGWorld world(1000, 1000, 1);
+		/*World world(1000, 1000, 1);
 		MapTunnelerBuilder builder(1000, 25);
 		world.build(std::bind(&MapTunnelerBuilder::build, std::ref(builder), std::placeholders::_1, std::placeholders::_2));
 		world.savePNG("world.png");*/
 	}
 	
-	RPGGame::~RPGGame()
+	Game::~Game()
 	{
-		for (std::map<unsigned int, RPGCharacter*>::iterator i = _characters.begin(); i != _characters.end(); i++)
+		for (std::map<unsigned int, Character*>::iterator i = _characters.begin(); i != _characters.end(); i++)
 		{
 			delete (*i).second;
 		}
-		for (std::map<unsigned int, RPGTile*>::iterator i = _tiles.begin(); i != _tiles.end(); i++)
+		for (std::map<unsigned int, Tile*>::iterator i = _tiles.begin(); i != _tiles.end(); i++)
 		{
 			delete (*i).second;
 		}
-		for (std::map<unsigned int, RPGInventory*>::iterator i = _inventories.begin(); i != _inventories.end(); i++)
+		for (std::map<unsigned int, Inventory*>::iterator i = _inventories.begin(); i != _inventories.end(); i++)
 		{
 			delete (*i).second;
 		}
-		for (std::map<unsigned int, RPGItemType*>::iterator i = _itemtypes.begin(); i != _itemtypes.end(); i++)
+		for (std::map<unsigned int, ItemType*>::iterator i = _itemtypes.begin(); i != _itemtypes.end(); i++)
 		{
 			delete (*i).second;
 		}
-		for (std::map<unsigned int, RPGItemInstance*>::iterator i = _iteminstances.begin(); i != _iteminstances.end(); i++)
+		for (std::map<unsigned int, ItemInstance*>::iterator i = _iteminstances.begin(); i != _iteminstances.end(); i++)
 		{
 			delete (*i).second;
 		}
 	}
 	
 	
-	void RPGGame::init()
+	void Game::init()
 	{
-		_parent->parser()->add_handler(new RPGCommandHandler(this));
+		_parent->parser()->add_handler(new CommandHandler(this));
 	}
 	
-	void RPGGame::start()
+	void Game::start()
 	{
 		init();
 	}
 	
-	void RPGGame::finish()
+	void Game::finish()
 	{
 		
 	}
 	
-	clientid RPGGame::check_logged_in(const std::string& charactername)
+	clientid Game::check_logged_in(const std::string& charactername)
 	{
 		clientid remove = -1;
-		for (std::map<clientid, RPGCharacter*>::iterator i = _activecharacters.begin(); i != _activecharacters.end(); i++)
+		for (std::map<clientid, Character*>::iterator i = _activecharacters.begin(); i != _activecharacters.end(); i++)
 		{
 			if (charactername == (*i).second->name())
 			{
@@ -88,27 +90,27 @@ namespace teh
 		return -1;
 	}
 	
-	clientid RPGGame::check_logged_in(RPGCharacter* character)
+	clientid Game::check_logged_in(Character* character)
 	{
 		if (character)
 			return check_logged_in(character->name());
 		return -1;
 	}
 	
-	void RPGGame::logout(const clientid& client)
+	void Game::logout(const clientid& client)
 	{
 		if (_activecharacters.count(client) == 0)
 			return;
 		
-		RPGCharacter* character = _activecharacters[client];
+		Character* character = _activecharacters[client];
 		_activecharacters.erase(client);
 		
-		RPGTile* room = character->get_location();
+		Tile* room = character->get_location();
 		
 		room->broadcast(character->name() + " magically disappears!");
 	}
 			
-	RPGCharacter* RPGGame::select_character(const clientid& client, const std::string& charactername)
+	Character* Game::select_character(const clientid& client, const std::string& charactername)
 	{
 		GameClient* gc = _server->get_client(client);
 		if (!gc)
@@ -134,7 +136,7 @@ namespace teh
 		
 		if (charid != -1)
 		{
-			RPGCharacter* character = get_character(charid);
+			Character* character = get_character(charid);
 			if (check_logged_in(character) == -1)
 			{
 				gc->state(GameClient::PlayingState);
@@ -146,7 +148,7 @@ namespace teh
 		return 0;
 	}
 	
-	RPGCharacter* RPGGame::get_character(unsigned int id)
+	Character* Game::get_character(unsigned int id)
 	{
 		if (_characters.count(id) == 0)
 		{
@@ -156,7 +158,7 @@ namespace teh
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
 			{				
-				_characters[id] = new RPGCharacter(id, this);
+				_characters[id] = new Character(id, this);
 			}
 			else
 			{
@@ -172,7 +174,7 @@ namespace teh
 		return _characters[id];
 	}
 	
-	RPGCharacter* RPGGame::get_active_character(const clientid& client)
+	Character* Game::get_active_character(const clientid& client)
 	{
 		if (_activecharacters.count(client))
 		{
@@ -181,7 +183,7 @@ namespace teh
 		return 0;
 	}
 	
-	stringvector RPGGame::character_names(const clientid& client)
+	stringvector Game::character_names(const clientid& client)
 	{
 		stringvector out;
 		GameClient* gc = _server->get_client(client);
@@ -206,7 +208,7 @@ namespace teh
 		return out;
 	}
 	
-	RPGTile* RPGGame::get_tile(unsigned int id)
+	Tile* Game::get_tile(unsigned int id)
 	{
 		if (_tiles.count(id) == 0)
 		{
@@ -216,7 +218,7 @@ namespace teh
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
 			{
-				_tiles[id] = new RPGTile(id, this);
+				_tiles[id] = new Tile(id, this);
 			}
 			else
 			{
@@ -232,14 +234,14 @@ namespace teh
 		return _tiles[id];
 	}
 	
-	void RPGGame::locate_tile(const long int& xpos, const long int& ypos, RPGTile* room)
+	void Game::locate_tile(const long int& xpos, const long int& ypos, Tile* room)
 	{
 		_tilescoords[xpos][ypos] = room;
 	}
 	
-	RPGTile* RPGGame::find_tile(const long int& xpos, const long int& ypos)
+	Tile* Game::find_tile(const long int& xpos, const long int& ypos)
 	{
-		if (!RPGGame::valid_coord(xpos, ypos))
+		if (!Game::valid_coord(xpos, ypos))
 			return 0;
 		
 		if (_tilescoords.count(xpos))
@@ -273,7 +275,7 @@ namespace teh
 		return 0;
 	}
 	
-	RPGInventory* RPGGame::get_inventory(unsigned int id)
+	Inventory* Game::get_inventory(unsigned int id)
 	{
 		if (_inventories.count(id) == 0)
 		{
@@ -283,7 +285,7 @@ namespace teh
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
 			{
-				_inventories[id] = new RPGInventory(id, this);
+				_inventories[id] = new Inventory(id, this);
 			}
 			else
 			{
@@ -300,7 +302,7 @@ namespace teh
 		return _inventories[id];
 	}
 	
-	RPGItemType* RPGGame::get_itemtype(unsigned int id)
+	ItemType* Game::get_itemtype(unsigned int id)
 	{
 		if (_itemtypes.count(id) == 0)
 		{
@@ -310,7 +312,7 @@ namespace teh
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
 			{
-				_itemtypes[id] = new RPGItemType(id, this);
+				_itemtypes[id] = new ItemType(id, this);
 			}
 			else
 			{
@@ -326,7 +328,7 @@ namespace teh
 		return _itemtypes[id];
 	}
 	
-	RPGItemType* RPGGame::find_itemtype(const std::string& name)
+	ItemType* Game::find_itemtype(const std::string& name)
 	{
 		sql::Connection* conn = sql()->connect();
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `ItemTypes` WHERE `name` = ?");
@@ -350,7 +352,7 @@ namespace teh
 		return 0;
 	}
 	
-	RPGItemInstance* RPGGame::get_iteminstance(unsigned int id)
+	ItemInstance* Game::get_iteminstance(unsigned int id)
 	{
 		if (_iteminstances.count(id) == 0)
 		{
@@ -360,7 +362,7 @@ namespace teh
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() == 1)
 			{
-				_iteminstances[id] = new RPGItemInstance(id, this);
+				_iteminstances[id] = new ItemInstance(id, this);
 			}
 			else
 			{
@@ -376,45 +378,46 @@ namespace teh
 		return _iteminstances[id];
 	}
 	
-	MySQL* RPGGame::sql()
+	MySQL* Game::sql()
 	{
 		return _parent->sql();
 	}
 	
-	void RPGGame::message_client(const clientid& client, const std::string& message)
+	void Game::message_client(const clientid& client, const std::string& message)
 	{
 		GameClient* gc = _server->get_client(client);
 		if (gc)
 			gc->write_line(message);
 	}
 	
-	GameClient* RPGGame::get_client(const clientid& client)
+	GameClient* Game::get_client(const clientid& client)
 	{
 		return _server->get_client(client);
 	}
 	
-	bool RPGGame::valid_coord(const long int& xpos, const long int& ypos)
+	bool Game::valid_coord(const long int& xpos, const long int& ypos)
 	{
 		if (xpos < 0)
 		{
-			if (xpos < -RPGGame::WorldXSize)
+			if (xpos < -Game::WorldXSize)
 				return false;
 		}
 		else
 		{
-			if (xpos >= RPGGame::WorldXSize)
+			if (xpos >= Game::WorldXSize)
 				return false;
 		}
 		if (ypos < 0)
 		{
-			if (ypos < -RPGGame::WorldYSize)
+			if (ypos < -Game::WorldYSize)
 				return false;
 		}
 		else
 		{
-			if (ypos >= RPGGame::WorldYSize)
+			if (ypos >= Game::WorldYSize)
 				return false;
 		}
 		return true;
 	}
+}
 }

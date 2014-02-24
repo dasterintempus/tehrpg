@@ -9,9 +9,11 @@
 
 namespace teh
 {
-	const std::string RPGCharacter::StatNames[6] = {"strength", "constitution", "dexterity", "intelligence", "wisdom", "charisma"};
+namespace RPG
+{
+	const std::string Character::StatNames[6] = {"strength", "constitution", "dexterity", "intelligence", "wisdom", "charisma"};
 	
-	RPGCharacter* RPGCharacter::build(RPGGame* parent, const std::string& name, const std::string& username, RPGTile* tile, const std::map<std::string, unsigned short int>& stats)
+	Character* Character::build(Game* parent, const std::string& name, const std::string& username, Tile* tile, const std::map<std::string, unsigned short int>& stats)
 	{
 		for (unsigned int n=0;n < 6;n++)
 		{
@@ -54,15 +56,15 @@ namespace teh
 		delete prep_stmt;
 		delete conn;
 		
-		RPGCharacter* character = parent->get_character(id);
+		Character* character = parent->get_character(id);
 		
-		RPGInventory* inventory = character->add_inventory("backpack", 30);
+		Inventory* inventory = character->add_inventory("backpack", 30);
 		//inventory->fill_out();
 		
 		return character;
 	}
 	
-	RPGCharacter::RPGCharacter(unsigned int id, RPGGame* parent)
+	Character::Character(unsigned int id, Game* parent)
 		: _id(id), _parent(parent)
 	{
 		sql::Connection* conn = _parent->sql()->connect();
@@ -84,42 +86,42 @@ namespace teh
 		delete conn;
 	}
 	
-	unsigned short int RPGCharacter::strength()
+	unsigned short int Character::strength()
 	{
 		return _strength;
 	}
 	
-	unsigned short int RPGCharacter::constitution()
+	unsigned short int Character::constitution()
 	{
 		return _constitution;
 	}
 	
-	unsigned short int RPGCharacter::dexterity()
+	unsigned short int Character::dexterity()
 	{
 		return _dexterity;
 	}
 	
-	unsigned short int RPGCharacter::intelligence()
+	unsigned short int Character::intelligence()
 	{
 		return _intelligence;
 	}
 	
-	unsigned short int RPGCharacter::wisdom()
+	unsigned short int Character::wisdom()
 	{
 		return _wisdom;
 	}
 	
-	unsigned short int RPGCharacter::charisma()
+	unsigned short int Character::charisma()
 	{
 		return _charisma;
 	}
 
-	std::string RPGCharacter::name()
+	std::string Character::name()
 	{
 		return _name;
 	}
 	
-	RPGTile* RPGCharacter::get_location()
+	Tile* Character::get_location()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -128,7 +130,7 @@ namespace teh
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		res->next();
 		
-		RPGTile* tile = _parent->get_tile(res->getUInt(1));
+		Tile* tile = _parent->get_tile(res->getUInt(1));
 		
 		delete res;
 		delete prep_stmt;
@@ -137,12 +139,12 @@ namespace teh
 		return tile;
 	}
 	
-	void RPGCharacter::say(const std::string& msg)
+	void Character::say(const std::string& msg)
 	{
 		get_location()->broadcast(name() + " says: \"" + msg + "\"");
 	}
 	
-	void RPGCharacter::emote(const std::string& msg, bool possessive)
+	void Character::emote(const std::string& msg, bool possessive)
 	{
 		if (possessive)
 		{
@@ -155,11 +157,11 @@ namespace teh
 		
 	}
 	
-	RPGTile* RPGCharacter::move(const std::string& direction)
+	Tile* Character::move(const std::string& direction)
 	{		
-		RPGTile* location = get_location();
+		Tile* location = get_location();
 		
-		RPGTile* destination = location->can_exit(direction);
+		Tile* destination = location->can_exit(direction);
 		if (!destination)
 		{
 			return 0;
@@ -168,18 +170,18 @@ namespace teh
 		{
 			location->broadcast_except(this, name() + " went " + direction + ".");
 			update_location(destination);
-			get_location()->broadcast_except(this, name() + " arrived from the " + RPGTile::opposite_direction(direction) + ".");
+			get_location()->broadcast_except(this, name() + " arrived from the " + Tile::opposite_direction(direction) + ".");
 		}
 		return destination;
 	}
 	
-	std::string RPGCharacter::look()
+	std::string Character::look()
 	{
 		std::stringstream sstream;
-		RPGTile* location = get_location();
+		Tile* location = get_location();
 		sstream << "You look around and see: " << location->description() << "\n";
 		//get who else is here
-		std::vector<RPGCharacter*> occupants = location->get_occupants();
+		std::vector<Character*> occupants = location->get_occupants();
 		if (occupants.size() > 1)
 		{
 			sstream << "Here with you are: ";
@@ -207,7 +209,7 @@ namespace teh
 				sstream << exits[n] << ", ";
 		}
 		//Items
-		RPGInventory* tileinv = location->get_inventory();
+		Inventory* tileinv = location->get_inventory();
 		if (tileinv)
 		{
 			sstream << tileinv->describe_contents() << "\n";
@@ -215,15 +217,15 @@ namespace teh
 		return sstream.str();
 	}
 	
-	std::string RPGCharacter::pickup(const std::string& target, unsigned int targetn, const std::string& destination)
+	std::string Character::pickup(const std::string& target, unsigned int targetn, const std::string& destination)
 	{
-		RPGTile* location = get_location();
-		RPGInventory* tileinv = location->get_inventory();
-		RPGItemInstance* targetitem = tileinv->select(target, targetn);
+		Tile* location = get_location();
+		Inventory* tileinv = location->get_inventory();
+		ItemInstance* targetitem = tileinv->select(target, targetn);
 		
 		if (targetitem)
 		{
-			RPGInventory* myinv = get_inventory(destination);
+			Inventory* myinv = get_inventory(destination);
 			if (myinv)
 			{
 				if (myinv->acquire(targetitem))
@@ -244,20 +246,20 @@ namespace teh
 		return "Unable to find any item named '" + target + "'.";
 	}
 	
-	std::string RPGCharacter::drop(const std::string& target, unsigned int targetn, const std::string& origin)
+	std::string Character::drop(const std::string& target, unsigned int targetn, const std::string& origin)
 	{
-		RPGInventory* inv = get_inventory(origin);
+		Inventory* inv = get_inventory(origin);
 		if (!inv)
 		{
 			return "You don't have an inventory named '" + origin + "'.";
 		}
 		
-		RPGItemInstance* targetitem = inv->select(target, targetn);
+		ItemInstance* targetitem = inv->select(target, targetn);
 		
 		if (targetitem)
 		{
-			RPGTile* location = get_location();
-			RPGInventory* tileinv = location->get_inventory();
+			Tile* location = get_location();
+			Inventory* tileinv = location->get_inventory();
 			if (tileinv->acquire(targetitem))
 			{
 				location->broadcast(name() + " dropped a " + target + " on the ground.");
@@ -271,9 +273,9 @@ namespace teh
 		return "Unable to find any item named '" + target + "'.";
 	}
 	
-	std::string RPGCharacter::examine(const std::string& origin, const std::string& target, unsigned int targetn)
+	std::string Character::examine(const std::string& origin, const std::string& target, unsigned int targetn)
 	{
-		RPGInventory* origininv = 0;
+		Inventory* origininv = 0;
 		if (origin == "ground")
 		{
 			origininv = get_location()->get_inventory();
@@ -288,7 +290,7 @@ namespace teh
 			return "Unable to locate that inventory";
 		}
 		
-		RPGItemInstance* targetitem = origininv->select(target, targetn);
+		ItemInstance* targetitem = origininv->select(target, targetn);
 		
 		if (!targetitem)
 		{
@@ -301,7 +303,7 @@ namespace teh
 		return out.str();
 	}
 	
-	RPGInventory* RPGCharacter::get_inventory(const std::string& name)
+	Inventory* Character::get_inventory(const std::string& name)
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -318,7 +320,7 @@ namespace teh
 		}
 		
 		res->next();
-		RPGInventory* inventory = _parent->get_inventory(res->getUInt(1));
+		Inventory* inventory = _parent->get_inventory(res->getUInt(1));
 		
 		delete res;
 		delete prep_stmt;
@@ -327,18 +329,18 @@ namespace teh
 		return inventory;
 	}
 	
-	RPGInventory* RPGCharacter::add_inventory(const std::string& name, unsigned short int capacity)
+	Inventory* Character::add_inventory(const std::string& name, unsigned short int capacity)
 	{
 		if (get_inventory(name))
 			return 0; //Inventory already exists, error
 		
-		RPGInventory* inventory = RPGInventory::build(_parent, this, name, capacity);
+		Inventory* inventory = Inventory::build(_parent, this, name, capacity);
 		return inventory;
 	}
 	
-	std::vector<RPGInventory*> RPGCharacter::all_inventories()
+	std::vector<Inventory*> Character::all_inventories()
 	{
-		std::vector<RPGInventory*> out;
+		std::vector<Inventory*> out;
 		
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -358,7 +360,7 @@ namespace teh
 		return out;
 	}
 	
-	int RPGCharacter::carrying_mass()
+	int Character::carrying_mass()
 	{
 		int mass = 0;
 		
@@ -379,17 +381,17 @@ namespace teh
 		return mass;
 	}
 	
-	int RPGCharacter::max_carrying_mass()
+	int Character::max_carrying_mass()
 	{
 		return 100;
 	}
 	
-	unsigned int RPGCharacter::id()
+	unsigned int Character::id()
 	{
 		return _id;
 	}
 	
-	void RPGCharacter::update_location(RPGTile* destination)
+	void Character::update_location(Tile* destination)
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -401,4 +403,5 @@ namespace teh
 		delete prep_stmt;
 		delete conn;
 	}
+}
 }

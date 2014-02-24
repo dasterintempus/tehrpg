@@ -6,12 +6,14 @@
 
 namespace teh
 {
-	const std::string RPGTile::northdir = std::string("north");
-	const std::string RPGTile::southdir = std::string("south");
-	const std::string RPGTile::eastdir = std::string("east");
-	const std::string RPGTile::westdir = std::string("west");
+namespace RPG
+{
+	const std::string Tile::northdir = std::string("north");
+	const std::string Tile::southdir = std::string("south");
+	const std::string Tile::eastdir = std::string("east");
+	const std::string Tile::westdir = std::string("west");
 	
-	std::string RPGTile::opposite_direction(const std::string& direction)
+	std::string Tile::opposite_direction(const std::string& direction)
 	{
 		if (direction == northdir)
 			return southdir;
@@ -24,9 +26,9 @@ namespace teh
 		return "";
 	}
 	
-	RPGTile* RPGTile::build(RPGGame* parent, const long int& xpos, const long int& ypos, bool solid, const std::string& description)
+	Tile* Tile::build(Game* parent, const long int& xpos, const long int& ypos, bool solid, const std::string& description)
 	{
-		if (!RPGGame::valid_coord(xpos, ypos))
+		if (!Game::valid_coord(xpos, ypos))
 		{
 			return 0;
 		}
@@ -71,14 +73,14 @@ namespace teh
 		delete prep_stmt;
 		delete conn;
 		
-		RPGTile* tile = parent->get_tile(id);
+		Tile* tile = parent->get_tile(id);
 		
-		RPGInventory* inventory = RPGInventory::build(parent, tile);
+		Inventory* inventory = Inventory::build(parent, tile);
 		
 		return tile;
 	}
 	
-	RPGTile::RPGTile(unsigned int id, RPGGame* parent)
+	Tile::Tile(unsigned int id, Game* parent)
 		: _id(id), _parent(parent)
 	{
 		sql::Connection* conn = _parent->sql()->connect();
@@ -99,9 +101,9 @@ namespace teh
 		locate();
 	}
 	
-	std::vector<RPGCharacter*> RPGTile::get_occupants(bool loggedin)
+	std::vector<Character*> Tile::get_occupants(bool loggedin)
 	{
-		std::vector<RPGCharacter*> occupants;
+		std::vector<Character*> occupants;
 		
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -110,7 +112,7 @@ namespace teh
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		while (res->next())
 		{
-			RPGCharacter* character = _parent->get_character(res->getInt(1));
+			Character* character = _parent->get_character(res->getInt(1));
 			if (_parent->check_logged_in(character) != -1 || !loggedin)
 				occupants.push_back(character);
 		}
@@ -121,9 +123,9 @@ namespace teh
 		return occupants;
 	}
 	
-	void RPGTile::broadcast(const std::string& msg)
+	void Tile::broadcast(const std::string& msg)
 	{
-		std::vector<RPGCharacter*> occupants = get_occupants();
+		std::vector<Character*> occupants = get_occupants();
 		for (unsigned int n = 0;n < occupants.size();n++)
 		{
 			clientid client = _parent->check_logged_in(occupants[n]);
@@ -134,9 +136,9 @@ namespace teh
 		}
 	}
 	
-	void RPGTile::broadcast_except(RPGCharacter* character, const std::string& msg)
+	void Tile::broadcast_except(Character* character, const std::string& msg)
 	{
-		std::vector<RPGCharacter*> occupants = get_occupants();
+		std::vector<Character*> occupants = get_occupants();
 		for (unsigned int n = 0;n < occupants.size();n++)
 		{
 			if (occupants[n] == character)
@@ -150,52 +152,52 @@ namespace teh
 		}
 	}
 	
-	unsigned int RPGTile::id()
+	unsigned int Tile::id()
 	{
 		return _id;
 	}
 	
-	long int RPGTile::xpos()
+	long int Tile::xpos()
 	{
 		return _xpos;
 	}
 	
-	long int RPGTile::ypos()
+	long int Tile::ypos()
 	{
 		return _ypos;
 	}
 	
-	bool RPGTile::solid()
+	bool Tile::solid()
 	{
 		return _solid;
 	}
 	
-	std::string RPGTile::description()
+	std::string Tile::description()
 	{
 		return _description;
 	}
 	
-	bool RPGTile::can_exit_north()
+	bool Tile::can_exit_north()
 	{
 		return can_exit(0, -1);
 	}
 	
-	bool RPGTile::can_exit_south()
+	bool Tile::can_exit_south()
 	{
 		return can_exit(0, 1);
 	}
 	
-	bool RPGTile::can_exit_east()
+	bool Tile::can_exit_east()
 	{
 		return can_exit(-1, 0);
 	}
 	
-	bool RPGTile::can_exit_west()
+	bool Tile::can_exit_west()
 	{
 		return can_exit(1, 0);
 	}
 	
-	stringvector RPGTile::get_wall_sides()
+	stringvector Tile::get_wall_sides()
 	{
 		stringvector wallsides;
 		
@@ -210,7 +212,7 @@ namespace teh
 		delete res;
 		delete prep_stmt;
 		
-		RPGTile* other = _parent->find_tile(xpos()+1, ypos());
+		Tile* other = _parent->find_tile(xpos()+1, ypos());
 		if (other)
 		{
 			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Walls`.`direction` FROM `Walls` WHERE `Walls`.`tile_id` = ?");
@@ -245,7 +247,7 @@ namespace teh
 		return wallsides;
 	}
 	
-	stringvector RPGTile::get_exits()
+	stringvector Tile::get_exits()
 	{
 		stringvector out;
 		
@@ -261,14 +263,14 @@ namespace teh
 		return out;
 	}
 	
-	RPGTile* RPGTile::can_exit(const int& dx, const int& dy)
+	Tile* Tile::can_exit(const int& dx, const int& dy)
 	{
 		if (abs(dx) > 1 || abs(dy) > 1)
 			return 0;
 		if (dx == 0 && dy == 0)
 			return 0;
 		
-		RPGTile* other = _parent->find_tile(xpos()+dx, ypos()+dy);
+		Tile* other = _parent->find_tile(xpos()+dx, ypos()+dy);
 		if (!other)
 			return 0;
 		if (other->solid())
@@ -290,7 +292,7 @@ namespace teh
 		return other;
 	}
 	
-	RPGTile* RPGTile::can_exit(const std::string& direction)
+	Tile* Tile::can_exit(const std::string& direction)
 	{
 		if (direction == northdir.substr(0, direction.size()))
 			return can_exit(0, -1);
@@ -304,7 +306,7 @@ namespace teh
 		return 0;
 	}
 	
-	RPGInventory* RPGTile::get_inventory()
+	Inventory* Tile::get_inventory()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Inventories` WHERE `tile_id` = ?");
@@ -312,7 +314,7 @@ namespace teh
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		res->next();
 		
-		RPGInventory* inventory = _parent->get_inventory(res->getUInt(1));
+		Inventory* inventory = _parent->get_inventory(res->getUInt(1));
 		
 		delete res;
 		delete prep_stmt;
@@ -321,7 +323,7 @@ namespace teh
 		return inventory;
 	}
 	
-	void RPGTile::locate()
+	void Tile::locate()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `xpos`, `ypos` FROM `Tiles` WHERE `id` = ?");
@@ -335,4 +337,5 @@ namespace teh
 		delete prep_stmt;
 		delete conn;
 	}
+}
 }

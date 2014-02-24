@@ -1,10 +1,11 @@
 #include "rpgworld.h"
 #include <iostream>
 
-namespace teh
+/*
+namespace teh::RPG
 {
 	
-	RPGWorld::RPGWorld(unsigned long int xsize, unsigned long int ysize, unsigned short int tilesize)
+	World::World(unsigned long int xsize, unsigned long int ysize, unsigned short int tilesize)
 		: _xsize(xsize), _ysize(ysize), _tilesize(tilesize)
 	{
 		/*
@@ -18,7 +19,7 @@ namespace teh
 				_tiles[x].push_back(t);
 			}
 		}
-		*/
+		
 		
 		//_tiles[1][1].northwall = true;
 		//_tiles[1][1].westwall = true;
@@ -28,12 +29,12 @@ namespace teh
 		//_tiles[6][5].westwall = true;
 	}
 	
-	void RPGWorld::build(std::function<std::vector<std::vector<Tile> > (unsigned long int, unsigned long int)> builder)
+	void World::build(std::function<std::vector<std::vector<Tile> > (unsigned long int, unsigned long int)> builder)
 	{
 		_tiles = builder(_xsize, _ysize);
 	}
 	
-	void RPGWorld::savePNG(const std::string& filename)
+	void World::savePNG(const std::string& filename)
 	{
 		//Init byte array
 		std::vector<unsigned char> bytes;
@@ -88,7 +89,7 @@ namespace teh
 		lodepng::encode(filename.c_str(), bytes, pixelwidth(), pixelheight());
 	}
 	
-	void RPGWorld::setPixel(std::vector<unsigned char>& bytes, long int x, long int y, const Color& c)
+	void World::setPixel(std::vector<unsigned char>& bytes, long int x, long int y, const Color& c)
 	{
 		int n = (4 * pixelwidth() * y) + (4 * x);
 		bytes[n] = c.r;
@@ -98,13 +99,14 @@ namespace teh
 	}
 	
 	
-	unsigned long int RPGWorld::pixelwidth()
+	unsigned long int World::pixelwidth()
 	{
 		return _tilesize * _xsize;
 	}
 	
-	unsigned long int RPGWorld::pixelheight()
+	unsigned long int World::pixelheight()
 	{
 		return _tilesize * _ysize;
 	}
 }
+*/

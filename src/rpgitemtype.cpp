@@ -4,7 +4,9 @@
 
 namespace teh
 {
-	RPGItemType* RPGItemType::build(RPGGame* parent, const std::string& name, const std::string& summary, const std::string& description, unsigned short int size, unsigned short int mass)
+namespace RPG
+{
+	ItemType* ItemType::build(Game* parent, const std::string& name, const std::string& summary, const std::string& description, unsigned short int size, unsigned short int mass)
 	{
 		sql::Connection* conn = parent->sql()->connect();
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("INSERT INTO `ItemTypes` VALUES (NULL, ?, ?, ?, ?, ?)");
@@ -37,7 +39,7 @@ namespace teh
 		return parent->get_itemtype(id);
 	}
 	
-	RPGItemType::RPGItemType(unsigned int id, RPGGame* parent)
+	ItemType::ItemType(unsigned int id, Game* parent)
 		: _id(id), _parent(parent)
 	{
 		sql::Connection* conn = _parent->sql()->connect();
@@ -57,33 +59,34 @@ namespace teh
 		delete conn;
 	}
 	
-	unsigned int RPGItemType::id()
+	unsigned int ItemType::id()
 	{
 		return _id;
 	}
 	
-	std::string RPGItemType::name()
+	std::string ItemType::name()
 	{
 		return _name;
 	}
 	
-	std::string RPGItemType::summary()
+	std::string ItemType::summary()
 	{
 		return _summary;
 	}
 	
-	std::string RPGItemType::description()
+	std::string ItemType::description()
 	{
 		return _description;
 	}
 	
-	unsigned short int RPGItemType::size()
+	unsigned short int ItemType::size()
 	{
 		return _size;
 	}
 	
-	unsigned short int RPGItemType::mass()
+	unsigned short int ItemType::mass()
 	{
 		return _mass;
 	}
+}
 }

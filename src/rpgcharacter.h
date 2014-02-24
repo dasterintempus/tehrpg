@@ -6,17 +6,19 @@
 
 namespace teh
 {	
-	class RPGGame;
-	class RPGTile;
-	class RPGInventory;
+namespace RPG
+{
+	class Game;
+	class Tile;
+	class Inventory;
 	
-	class RPGCharacter
+	class Character
 	{
 		public:
 			const static std::string StatNames[6];
-			static RPGCharacter* build(RPGGame* parent, const std::string& name, const std::string& username, RPGTile* room, const std::map<std::string, unsigned short int>& stats);
+			static Character* build(Game* parent, const std::string& name, const std::string& username, Tile* room, const std::map<std::string, unsigned short int>& stats);
 		
-			RPGCharacter(unsigned int id, RPGGame* parent);
+			Character(unsigned int id, Game* parent);
 		
 			unsigned short int strength();
 			unsigned short int constitution();
@@ -27,28 +29,28 @@ namespace teh
 		
 			std::string name();
 		
-			RPGTile* get_location();
+			Tile* get_location();
 		
 			void say(const std::string& msg);
 			void emote(const std::string& msg, bool possessive=false);
-			RPGTile* move(const std::string& direction);
+			Tile* move(const std::string& direction);
 			std::string look();
 			std::string pickup(const std::string& target, unsigned int targetn=1, const std::string& destination="backpack");
 			std::string drop(const std::string& target, unsigned int targetn=1, const std::string& origin="backpack");
 			std::string examine(const std::string& origin, const std::string& target, unsigned int targetn=1);
 		
-			RPGInventory* get_inventory(const std::string& name);
-			RPGInventory* add_inventory(const std::string& name, unsigned short int capacity);
-			std::vector<RPGInventory*> all_inventories();
+			Inventory* get_inventory(const std::string& name);
+			Inventory* add_inventory(const std::string& name, unsigned short int capacity);
+			std::vector<Inventory*> all_inventories();
 			
 			int carrying_mass();
 			int max_carrying_mass();
 		
 			unsigned int id();
 		private:
-			void update_location(RPGTile* destination);
+			void update_location(Tile* destination);
 		
-			RPGGame* _parent;
+			Game* _parent;
 			unsigned int _id;
 			std::string _name;
 		
@@ -59,4 +61,5 @@ namespace teh
 			unsigned short int _wisdom;
 			unsigned short int _charisma;
 	};
+}
 }

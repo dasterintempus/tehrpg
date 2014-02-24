@@ -5,18 +5,20 @@
 
 namespace teh
 {
-	class RPGGame;
-	class RPGTile;
-	class RPGCharacter;
-	class RPGInventorySlot;
-	class RPGInventory;
+namespace RPG
+{
+	class Game;
+	class Tile;
+	class Character;
+	class InventorySlot;
+	class Inventory;
 	
-	class RPGItemType
+	class ItemType
 	{
 		public:
-			static RPGItemType* build(RPGGame* parent, const std::string& name, const std::string& summary, const std::string& description, unsigned short int size, unsigned short int mass);
+			static ItemType* build(Game* parent, const std::string& name, const std::string& summary, const std::string& description, unsigned short int size, unsigned short int mass);
 			
-			RPGItemType(unsigned int id, RPGGame* parent);
+			ItemType(unsigned int id, Game* parent);
 		
 			unsigned int id();
 			std::string name();
@@ -26,7 +28,7 @@ namespace teh
 			unsigned short int mass();
 		private:
 			unsigned int _id;
-			RPGGame* _parent;
+			Game* _parent;
 		
 			std::string _name;
 			std::string _summary;
@@ -34,4 +36,5 @@ namespace teh
 			unsigned short int _size;
 			unsigned short int _mass;
 	};
+}
 }

@@ -7,11 +7,13 @@
 
 namespace teh
 {	
-	class RPGGame;
-	class RPGCharacter;
-	class RPGInventory;
+namespace RPG
+{
+	class Game;
+	class Character;
+	class Inventory;
 	
-	class RPGTile
+	class Tile
 	{
 		public:
 			const static std::string northdir;
@@ -21,12 +23,12 @@ namespace teh
 		
 			static std::string opposite_direction(const std::string& direction);
 		
-			static RPGTile* build(RPGGame* parent, const long int& xpos, const long int& ypos, bool solid = true, const std::string& description = "");
-			RPGTile(unsigned int id, RPGGame* parent);
+			static Tile* build(Game* parent, const long int& xpos, const long int& ypos, bool solid = true, const std::string& description = "");
+			Tile(unsigned int id, Game* parent);
 		
-			std::vector<RPGCharacter*> get_occupants(bool loggedin=true);
+			std::vector<Character*> get_occupants(bool loggedin=true);
 			void broadcast(const std::string& msg);
-			void broadcast_except(RPGCharacter* character, const std::string& msg);
+			void broadcast_except(Character* character, const std::string& msg);
 		
 			unsigned int id();
 		
@@ -45,20 +47,20 @@ namespace teh
 			stringvector get_wall_sides();
 			stringvector get_exits();
 		
-			RPGTile* can_exit(const int& dx, const int& dy);
-			RPGTile* can_exit(const std::string& direction);
+			Tile* can_exit(const int& dx, const int& dy);
+			Tile* can_exit(const std::string& direction);
 			
-			RPGInventory* get_inventory();
+			Inventory* get_inventory();
 		private:
 			void locate();
 		
 			unsigned int _id;
-			RPGGame* _parent;
+			Game* _parent;
 			std::string _description;
 			long int _xpos;
 			long int _ypos;
 			bool _solid;
 	};
 	
+}	
 }
-	

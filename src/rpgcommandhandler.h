@@ -4,13 +4,15 @@
 
 namespace teh
 {
-	class RPGGame;
+namespace RPG
+{
+	class Game;
 	
-	class RPGCommandHandler
+	class CommandHandler
 		: public CommandHandlerInterface
 	{
 		public:
-			RPGCommandHandler(RPGGame* parent);
+			CommandHandler(Game* parent);
 			
 			void handle_command(const Command& cmd);
 			bool accepts_command(const Command& cmd);
@@ -34,7 +36,8 @@ namespace teh
 			void cmd_inventory(const Command& cmd);
 			void cmd_examine(const Command& cmd);
 		
-			RPGGame* _parent;
+			Game* _parent;
 	};
 	
+}
 }

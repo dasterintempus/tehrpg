@@ -6,7 +6,9 @@
 
 namespace teh
 {
-	RPGItemInstance* RPGItemInstance::build(RPGGame* parent, RPGInventory* inv, RPGItemType* type)
+namespace RPG
+{
+	ItemInstance* ItemInstance::build(Game* parent, Inventory* inv, ItemType* type)
 	{
 		if (inv->capacity() != 0 && inv->space_remaining() < type->size())
 			return 0;
@@ -39,18 +41,18 @@ namespace teh
 		return parent->get_iteminstance(id);
 	}
 	
-	RPGItemInstance::RPGItemInstance(unsigned int id, RPGGame* parent)
+	ItemInstance::ItemInstance(unsigned int id, Game* parent)
 		: _id(id), _parent(parent)
 	{
 		//No data on this object... yet
 	}
 	
-	unsigned int RPGItemInstance::id()
+	unsigned int ItemInstance::id()
 	{
 		return _id;
 	}
 	
-	RPGInventory* RPGItemInstance::container()
+	Inventory* ItemInstance::container()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -58,7 +60,7 @@ namespace teh
 		prep_stmt->setUInt(1, id());
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		res->next();
-		RPGInventory* inv = _parent->get_inventory(res->getUInt(1));
+		Inventory* inv = _parent->get_inventory(res->getUInt(1));
 		
 		delete res;
 		delete prep_stmt;
@@ -67,7 +69,7 @@ namespace teh
 		return inv;
 	}
 	
-	RPGItemType* RPGItemInstance::type()
+	ItemType* ItemInstance::type()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -76,13 +78,13 @@ namespace teh
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		res->next();
 		
-		RPGItemType* type = _parent->get_itemtype(res->getUInt(1));
+		ItemType* type = _parent->get_itemtype(res->getUInt(1));
 		
 		delete res;
 		delete prep_stmt;
 		delete conn;
 		
 		return type;
-	}
-	
+	}	
+}
 }

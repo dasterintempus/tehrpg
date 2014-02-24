@@ -10,7 +10,9 @@
 
 namespace teh
 {
-	RPGInventory* RPGInventory::build(RPGGame* parent, RPGTile* tile)
+namespace RPG
+{
+	Inventory* Inventory::build(Game* parent, Tile* tile)
 	{
 		sql::Connection* conn = parent->sql()->connect();
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("INSERT INTO `Inventories` VALUES (NULL, NULL, DEFAULT, NULL, ?)");
@@ -39,7 +41,7 @@ namespace teh
 		return parent->get_inventory(id);
 	}
 	
-	RPGInventory* RPGInventory::build(RPGGame* parent, RPGCharacter* character, std::string name, unsigned short int capacity)
+	Inventory* Inventory::build(Game* parent, Character* character, std::string name, unsigned short int capacity)
 	{
 		if (name == "" || capacity == 0)
 		{
@@ -76,7 +78,7 @@ namespace teh
 		return parent->get_inventory(id);
 	}
 
-	RPGInventory::RPGInventory(unsigned int id, RPGGame* parent)
+	Inventory::Inventory(unsigned int id, Game* parent)
 		: _id(id), _parent(parent)
 	{
 		sql::Connection* conn = _parent->sql()->connect();
@@ -93,22 +95,22 @@ namespace teh
 		delete conn;
 	}
 	
-	unsigned int RPGInventory::id()
+	unsigned int Inventory::id()
 	{
 		return _id;
 	}
 	
-	std::string RPGInventory::name()
+	std::string Inventory::name()
 	{
 		return _name;
 	}
 	
-	unsigned short int RPGInventory::capacity()
+	unsigned short int Inventory::capacity()
 	{
 		return _capacity;
 	}
 	
-	RPGCharacter* RPGInventory::character()
+	Character* Inventory::character()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -129,7 +131,7 @@ namespace teh
 		return _parent->get_character(charid);
 	}
 	
-	RPGTile* RPGInventory::tile()
+	Tile* Inventory::tile()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		
@@ -150,9 +152,9 @@ namespace teh
 		return _parent->get_tile(tileid);
 	}
 	
-	std::vector<RPGItemInstance*> RPGInventory::contents()
+	std::vector<ItemInstance*> Inventory::contents()
 	{
-		std::vector<RPGItemInstance*> out;
+		std::vector<ItemInstance*> out;
 		
 		sql::Connection* conn = _parent->sql()->connect();
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `ItemInstances` WHERE `inv_id` = ? ORDER BY `id`");
@@ -166,7 +168,7 @@ namespace teh
 		return out;
 	}
 	
-	unsigned short int RPGInventory::space_used()
+	unsigned short int Inventory::space_used()
 	{
 		sql::Connection* conn = _parent->sql()->connect();
 		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT SUM(`ItemTypes`.`size`) FROM `ItemInstances` JOIN `ItemTypes` WHERE `ItemTypes`.`id` = `ItemInstances`.`type_id` AND `ItemInstances`.`inv_id` = ?");
@@ -176,14 +178,14 @@ namespace teh
 		return res->getUInt(1);
 	}
 	
-	unsigned short int RPGInventory::space_remaining()
+	unsigned short int Inventory::space_remaining()
 	{
 		if (space_used() > capacity())
 			return 0;
 		return capacity() - space_used();
 	}
 	
-	bool RPGInventory::acquire(RPGItemInstance* item)
+	bool Inventory::acquire(ItemInstance* item)
 	{
 		if (capacity() != 0)
 		{
@@ -191,7 +193,7 @@ namespace teh
 				return false;
 		}
 		
-		RPGCharacter* c = character();
+		Character* c = character();
 		if (c)
 		{
 			if (c->carrying_mass() + item->type()->mass() > c->max_carrying_mass())
@@ -220,16 +222,16 @@ namespace teh
 		return true;
 	}
 	
-	RPGItemInstance* RPGInventory::select(const std::string& target, unsigned int targetn)
+	ItemInstance* Inventory::select(const std::string& target, unsigned int targetn)
 	{
-		RPGItemInstance* selected = 0;
-		std::map<RPGItemType*, unsigned int> typecounters;
-		std::vector<RPGItemInstance*> c = contents();
+		ItemInstance* selected = 0;
+		std::map<ItemType*, unsigned int> typecounters;
+		std::vector<ItemInstance*> c = contents();
 		bool multiple = false;
 		for (unsigned int n = 0; n < c.size(); n++)
 		{
-			RPGItemInstance* item = c[n];
-			RPGItemType* type = item->type();
+			ItemInstance* item = c[n];
+			ItemType* type = item->type();
 			
 			if (typecounters.count(type)==0)
 				typecounters[type] = 0;
@@ -256,11 +258,11 @@ namespace teh
 		return selected;
 	}
 	
-	std::string RPGInventory::describe_contents()
+	std::string Inventory::describe_contents()
 	{
 		std::stringstream sstream;
-		std::map<RPGItemType*, unsigned int> typecounters;
-		std::vector<RPGItemInstance*> c = contents();
+		std::map<ItemType*, unsigned int> typecounters;
+		std::vector<ItemInstance*> c = contents();
 		if (c.size() > 0)
 		{
 			sstream << "There are the following items: ";
@@ -271,8 +273,8 @@ namespace teh
 		}
 		for (unsigned int n = 0; n < c.size(); n++)
 		{
-			RPGItemInstance* item = c[n];
-			RPGItemType* type = item->type();
+			ItemInstance* item = c[n];
+			ItemType* type = item->type();
 			
 			if (typecounters.count(type)==0)
 				typecounters[type] = 0;
@@ -286,4 +288,5 @@ namespace teh
 		}
 		return sstream.str();
 	}
+}
 }

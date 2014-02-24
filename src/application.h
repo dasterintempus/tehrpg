@@ -8,11 +8,14 @@
 namespace po = boost::program_options;
 
 namespace teh
-{
+{	
 	class NetServer;
 	class GameServer;
 	class MySQL;
-	class RPGGame;
+	namespace RPG
+	{
+		class Game;
+	}
 	class CommandParser;
 	class ConsoleConnection;
 	
@@ -27,7 +30,7 @@ namespace teh
 			void finish();
 
 			MySQL* sql();
-			RPGGame* rpg();
+			RPG::Game* rpg();
 			CommandParser* parser();
 		private:
 			void start_gameserver();
@@ -47,7 +50,7 @@ namespace teh
 			sf::Mutex _donemutex;
 
 			MySQL* _mysql;
-			RPGGame* _rpggame;
+			RPG::Game* _rpggame;
 		
 			CommandParser* _commandparser;
 		

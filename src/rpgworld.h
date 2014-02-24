@@ -8,7 +8,8 @@
 
 #include <functional>
 
-namespace teh
+/*
+namespace teh::RPG
 {
 	struct Color
 	{
@@ -23,10 +24,10 @@ namespace teh
 		bool solid;
 	};
 	
-	class RPGWorld
+	class World
 	{
 		public:
-			RPGWorld(unsigned long int xsize, unsigned long int ysize, unsigned short int tilesize);
+			World(unsigned long int xsize, unsigned long int ysize, unsigned short int tilesize);
 			void build(std::function<std::vector<std::vector<Tile> > (unsigned long int, unsigned long int)> builder);
 			void savePNG(const std::string& filename);
 		
@@ -40,3 +41,4 @@ namespace teh
 			std::vector<std::vector<Tile> > _tiles;
 	};
 }
+*/

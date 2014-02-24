@@ -4,6 +4,7 @@
 #include <time.h>
 #include <functional>
 
+/*
 namespace teh
 {	
 	void RPGWorldBuilder1_solidifier(std::vector<std::vector<Tile> >& tiles, int x, int y)
@@ -178,3 +179,4 @@ namespace teh
 	
 	
 }
+*/

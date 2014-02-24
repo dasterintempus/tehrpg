@@ -12,16 +12,17 @@
 
 namespace teh
 {
-
-	RPGCommandHandler::RPGCommandHandler(RPGGame* parent)
+namespace RPG
+{
+	CommandHandler::CommandHandler(Game* parent)
 		: _parent(parent)
 	{
 		
 	}
 	
-	void RPGCommandHandler::handle_command(const Command& cmd)
+	void CommandHandler::handle_command(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		
 		std::string first = cmd.arguments[0];
 		if (first == "select" && !character)
@@ -105,7 +106,7 @@ namespace teh
 		}
 	}
 	
-	bool RPGCommandHandler::accepts_command(const Command& cmd)
+	bool CommandHandler::accepts_command(const Command& cmd)
 	{
 		std::string first = cmd.arguments[0];
 		if (cmd.prefix == '\0')
@@ -150,9 +151,9 @@ namespace teh
 		return false;
 	}
 	
-	void RPGCommandHandler::handle_default(const Command& cmd)
+	void CommandHandler::handle_default(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -160,14 +161,14 @@ namespace teh
 		
 	}
 	
-	bool RPGCommandHandler::accepts_default()
+	bool CommandHandler::accepts_default()
 	{
 		return true;
 	}
 	
-	void RPGCommandHandler::cmd_select(const Command& cmd)
+	void CommandHandler::cmd_select(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (character)
 		{
 			_parent->message_client(cmd.client, "You are already playing as " + character->name());
@@ -186,7 +187,7 @@ namespace teh
 				if (character)
 				{
 					_parent->message_client(cmd.client, "Selected character: " + cmd.arguments[1]);
-					RPGTile* location = character->get_location();
+					Tile* location = character->get_location();
 					location->broadcast(character->name() + " appears magically!");
 				}
 				else
@@ -202,9 +203,9 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_listchars(const Command& cmd)
+	void CommandHandler::cmd_listchars(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		
 		stringvector charnames = _parent->character_names(cmd.client);
 		_parent->message_client(cmd.client, "Characters:");
@@ -222,7 +223,7 @@ namespace teh
 		_parent->message_client(cmd.client, "---");
 	}
 	
-	void RPGCommandHandler::cmd_addtile(const Command& cmd)
+	void CommandHandler::cmd_addtile(const Command& cmd)
 	{
 		GameClient* gc = _parent->get_client(cmd.client);
 		if (!gc)
@@ -235,7 +236,7 @@ namespace teh
 				long int x = to_numeric<long int>(cmd.arguments[1]);
 				long int y = to_numeric<long int>(cmd.arguments[2]);
 				std::string description = cmd.arguments[3];
-				RPGTile* tile = RPGTile::build(_parent, x, y, false, description);
+				Tile* tile = Tile::build(_parent, x, y, false, description);
 				if (tile)
 				{
 					_parent->message_client(cmd.client, "Tile created.");
@@ -257,9 +258,9 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_makechar(const Command& cmd)
+	void CommandHandler::cmd_makechar(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (character)
 			return;
 		
@@ -281,7 +282,7 @@ namespace teh
 		std::map<std::string, unsigned short int> stats;
 		for (unsigned int n = 0;n < 6;n++)
 		{
-			stats[RPGCharacter::StatNames[n]] = 10;
+			stats[Character::StatNames[n]] = 10;
 		}
 		
 		if (cmd.arguments.size() == 4)
@@ -298,7 +299,7 @@ namespace teh
 			std::string downstatreal;
 			for (unsigned int n = 0;n < 6;n++)
 			{
-				std::string statname = RPGCharacter::StatNames[n];
+				std::string statname = Character::StatNames[n];
 				if (statname.substr(0, upstat.size()) == upstat)
 				{
 					upstatreal = statname;
@@ -328,9 +329,9 @@ namespace teh
 			stats[downstatreal] -= 2;
 		}
 		
-		RPGTile* tile = _parent->get_tile(1);
+		Tile* tile = _parent->get_tile(1);
 		
-		character = RPGCharacter::build(_parent, charname, username, tile, stats);
+		character = Character::build(_parent, charname, username, tile, stats);
 		if (character)
 		{
 			_parent->message_client(cmd.client, "Character created.");
@@ -343,24 +344,24 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_logout(const Command& cmd)
+	void CommandHandler::cmd_logout(const Command& cmd)
 	{
 		_parent->logout(cmd.client);
 	}
 	
-	void RPGCommandHandler::cmd_summonrock(const Command& cmd)
+	void CommandHandler::cmd_summonrock(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
-		RPGTile* location = character->get_location();
+		Tile* location = character->get_location();
 		
-		RPGInventory* ground = location->get_inventory();
+		Inventory* ground = location->get_inventory();
 		
-		RPGItemType* rock = _parent->find_itemtype("rock");
+		ItemType* rock = _parent->find_itemtype("rock");
 		
-		RPGItemInstance* instance = RPGItemInstance::build(_parent, ground, rock);
+		ItemInstance* instance = ItemInstance::build(_parent, ground, rock);
 		if (instance)
 		{
 			location->broadcast(character->name() + " casts Summon Rock! A rock appears.");
@@ -371,9 +372,9 @@ namespace teh
 		}
 	}
 
-	void RPGCommandHandler::cmd_say(const Command& cmd)
+	void CommandHandler::cmd_say(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -410,13 +411,13 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_where(const Command& cmd)
+	void CommandHandler::cmd_where(const Command& cmd)
 	{	
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
-		RPGTile* location = character->get_location();
+		Tile* location = character->get_location();
 		if (!location)
 		{
 			_parent->message_client(cmd.client, "Error! You are nowhere.");
@@ -429,13 +430,13 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_move(const Command& cmd)
+	void CommandHandler::cmd_move(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
-		RPGTile* destination = 0;
+		Tile* destination = 0;
 		if (cmd.arguments.size() != 2)
 		{
 			_parent->message_client(cmd.client, "Invalid usage of move command.");
@@ -465,9 +466,9 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_look(const Command& cmd)
+	void CommandHandler::cmd_look(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -482,9 +483,9 @@ namespace teh
 		_parent->message_client(cmd.client, looktext);
 	}
 	
-	void RPGCommandHandler::cmd_emote(const Command& cmd)
+	void CommandHandler::cmd_emote(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -506,9 +507,9 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_pickup(const Command& cmd)
+	void CommandHandler::cmd_pickup(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -558,9 +559,9 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_drop(const Command& cmd)
+	void CommandHandler::cmd_drop(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -610,9 +611,9 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_inventory(const Command& cmd)
+	void CommandHandler::cmd_inventory(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -635,7 +636,7 @@ namespace teh
 		
 		if (invname != "")
 		{
-			RPGInventory* inv = character->get_inventory(invname);
+			Inventory* inv = character->get_inventory(invname);
 			if (!inv)
 			{
 				_parent->message_client(cmd.client, "You don't have an inventory named '" + invname + "'.");
@@ -651,7 +652,7 @@ namespace teh
 		else
 		{
 			std::stringstream message;
-			std::vector<RPGInventory*> inventories = character->all_inventories();
+			std::vector<Inventory*> inventories = character->all_inventories();
 			for (unsigned int n = 0;n < inventories.size();n++)
 			{
 				message << "You look in your inventory '" << inventories[n]->name() << "': ";
@@ -663,9 +664,9 @@ namespace teh
 		}
 	}
 	
-	void RPGCommandHandler::cmd_examine(const Command& cmd)
+	void CommandHandler::cmd_examine(const Command& cmd)
 	{
-		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		Character* character = _parent->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -707,4 +708,5 @@ namespace teh
 			return;
 		}
 	}
+}
 }

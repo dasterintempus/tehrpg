@@ -5,6 +5,7 @@
 #include <functional>
 #include <algorithm>
 
+/*
 namespace teh
 {
 	MapTunnelerBuilder::MapTunnelerBuilder(unsigned long int numsteps, unsigned int densitycheckradius)
@@ -242,3 +243,4 @@ namespace teh
 		return a.density < b.density;
 	}
 }
+*/
