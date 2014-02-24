@@ -31,6 +31,8 @@ namespace teh
 			unsigned short int space_used();
 			unsigned short int space_remaining();
 		
+			RPGItemInstance* select(const std::string& target, unsigned int targetn=1);
+		
 			bool acquire(RPGItemInstance* item);
 			std::string describe_contents();
 		private:

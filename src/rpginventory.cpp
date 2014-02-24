@@ -220,6 +220,42 @@ namespace teh
 		return true;
 	}
 	
+	RPGItemInstance* RPGInventory::select(const std::string& target, unsigned int targetn)
+	{
+		RPGItemInstance* selected = 0;
+		std::map<RPGItemType*, unsigned int> typecounters;
+		std::vector<RPGItemInstance*> c = contents();
+		bool multiple = false;
+		for (unsigned int n = 0; n < c.size(); n++)
+		{
+			RPGItemInstance* item = c[n];
+			RPGItemType* type = item->type();
+			
+			if (typecounters.count(type)==0)
+				typecounters[type] = 0;
+			
+			typecounters[type]++;
+
+			if (target == type->name())
+			{
+				if (typecounters[type] > 1)
+					multiple = true;
+				if (targetn > 0)
+				{
+					if (targetn == typecounters[type])
+					{
+						selected = item;
+					}
+				}
+				else
+				{
+					selected = item;
+				}
+			}
+		}
+		return selected;
+	}
+	
 	std::string RPGInventory::describe_contents()
 	{
 		std::stringstream sstream;

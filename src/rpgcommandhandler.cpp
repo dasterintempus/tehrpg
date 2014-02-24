@@ -98,6 +98,11 @@ namespace teh
 			cmd_inventory(cmd);
 			return;
 		}
+		else if (first == "examine")
+		{
+			cmd_examine(cmd);
+			return;
+		}
 	}
 	
 	bool RPGCommandHandler::accepts_command(const Command& cmd)
@@ -113,7 +118,8 @@ namespace teh
 				first == "pickup" ||
 				first == "get" ||
 				first == "drop" ||
-				first == "inventory")
+				first == "inventory" ||
+				first == "examine")
 				return true;
 		}
 		else if (cmd.prefix == '/')
@@ -654,6 +660,51 @@ namespace teh
 			}
 			message << "You are carrying " << character->carrying_mass() << "/" << character->max_carrying_mass() << " kg.";
 			_parent->message_client(cmd.client, message.str());
+		}
+	}
+	
+	void RPGCommandHandler::cmd_examine(const Command& cmd)
+	{
+		RPGCharacter* character = _parent->get_active_character(cmd.client);
+		if (!character)
+			return;
+		
+		if (cmd.arguments.size() == 4)
+		{
+			std::string origin = cmd.arguments[1];
+			std::string target = cmd.arguments[2];
+			if (!is_numeric<unsigned int>(cmd.arguments[3]))
+			{
+				_parent->message_client(cmd.client, "Invalid usage of examine command.");
+				_parent->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
+				return;
+			}
+			unsigned int n = to_numeric<unsigned int>(cmd.arguments[3]);
+			
+			std::string message = character->examine(origin, target, n);
+			_parent->message_client(cmd.client, message);
+		}
+		else if (cmd.arguments.size() == 3)
+		{
+			std::string origin = cmd.arguments[1];
+			if (!is_numeric<unsigned int>(cmd.arguments[2]))
+			{
+				std::string target = cmd.arguments[2];
+				std::string message = character->examine(origin, target);
+				_parent->message_client(cmd.client, message);
+			}
+			else
+			{
+				_parent->message_client(cmd.client, "Invalid usage of examine command.");
+				_parent->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
+				return;
+			}
+		}
+		else
+		{
+			_parent->message_client(cmd.client, "Invalid usage of examine command.");
+			_parent->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
+			return;
 		}
 	}
 }

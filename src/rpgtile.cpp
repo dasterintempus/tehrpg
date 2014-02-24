@@ -11,6 +11,19 @@ namespace teh
 	const std::string RPGTile::eastdir = std::string("east");
 	const std::string RPGTile::westdir = std::string("west");
 	
+	std::string RPGTile::opposite_direction(const std::string& direction)
+	{
+		if (direction == northdir)
+			return southdir;
+		else if (direction == southdir)
+			return northdir;
+		else if (direction == westdir)
+			return eastdir;
+		else if (direction == eastdir)
+			return westdir;
+		return "";
+	}
+	
 	RPGTile* RPGTile::build(RPGGame* parent, const long int& xpos, const long int& ypos, bool solid, const std::string& description)
 	{
 		if (!RPGGame::valid_coord(xpos, ypos))
@@ -113,6 +126,22 @@ namespace teh
 		std::vector<RPGCharacter*> occupants = get_occupants();
 		for (unsigned int n = 0;n < occupants.size();n++)
 		{
+			clientid client = _parent->check_logged_in(occupants[n]);
+			if (client != -1)
+			{
+				_parent->message_client(client, msg);
+			}
+		}
+	}
+	
+	void RPGTile::broadcast_except(RPGCharacter* character, const std::string& msg)
+	{
+		std::vector<RPGCharacter*> occupants = get_occupants();
+		for (unsigned int n = 0;n < occupants.size();n++)
+		{
+			if (occupants[n] == character)
+				continue;
+			
 			clientid client = _parent->check_logged_in(occupants[n]);
 			if (client != -1)
 			{

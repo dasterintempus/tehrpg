@@ -166,7 +166,9 @@ namespace teh
 		}
 		else
 		{
+			location->broadcast_except(this, name() + " went " + direction + ".");
 			update_location(destination);
+			get_location()->broadcast_except(this, name() + " arrived from the " + RPGTile::opposite_direction(direction) + ".");
 		}
 		return destination;
 	}
@@ -217,37 +219,7 @@ namespace teh
 	{
 		RPGTile* location = get_location();
 		RPGInventory* tileinv = location->get_inventory();
-		RPGItemInstance* targetitem = 0;
-		std::map<RPGItemType*, unsigned int> typecounters;
-		std::vector<RPGItemInstance*> contents = tileinv->contents();
-		bool multiple = false;
-		for (unsigned int n = 0; n < contents.size(); n++)
-		{
-			RPGItemInstance* item = contents[n];
-			RPGItemType* type = item->type();
-			
-			if (typecounters.count(type)==0)
-				typecounters[type] = 0;
-			
-			typecounters[type]++;
-
-			if (target == type->name())
-			{
-				if (typecounters[type] > 1)
-					multiple = true;
-				if (targetn > 0)
-				{
-					if (targetn == typecounters[type])
-					{
-						targetitem = item;
-					}
-				}
-				else
-				{
-					targetitem = item;
-				}
-			}
-		}
+		RPGItemInstance* targetitem = tileinv->select(target, targetn);
 		
 		if (targetitem)
 		{
@@ -256,16 +228,8 @@ namespace teh
 			{
 				if (myinv->acquire(targetitem))
 				{
-					if (multiple)
-					{
-						location->broadcast(name() + " picked up a " + target + ".");
-						return "You picked up a " + target + " and put in your " + destination + ".";
-					}
-					else
-					{
-						location->broadcast(name() + " picked up the " + target + ".");
-						return "You picked up the " + target + " and put in your " + destination + ".";
-					}
+					location->broadcast(name() + " picked up a " + target + ".");
+					return "You picked up a " + target + " and put it in your " + destination + ".";
 				}
 				else
 				{
@@ -288,37 +252,7 @@ namespace teh
 			return "You don't have an inventory named '" + origin + "'.";
 		}
 		
-		RPGItemInstance* targetitem = 0;
-		std::map<RPGItemType*, unsigned int> typecounters;
-		std::vector<RPGItemInstance*> contents = inv->contents();
-		bool multiple = false;
-		for (unsigned int n = 0; n < contents.size(); n++)
-		{
-			RPGItemInstance* item = contents[n];
-			RPGItemType* type = item->type();
-			
-			if (typecounters.count(type)==0)
-				typecounters[type] = 0;
-			
-			typecounters[type]++;
-
-			if (target == type->name())
-			{
-				if (typecounters[type] > 1)
-					multiple = true;
-				if (targetn > 0)
-				{
-					if (targetn == typecounters[type])
-					{
-						targetitem = item;
-					}
-				}
-				else
-				{
-					targetitem = item;
-				}
-			}
-		}
+		RPGItemInstance* targetitem = inv->select(target, targetn);
 		
 		if (targetitem)
 		{
@@ -326,16 +260,8 @@ namespace teh
 			RPGInventory* tileinv = location->get_inventory();
 			if (tileinv->acquire(targetitem))
 			{
-				if (multiple)
-				{
-					location->broadcast(name() + " dropped a " + target + " on the ground.");
-					return "You dropped a " + target + " from your " + origin + ".";
-				}
-				else
-				{
-					location->broadcast(name() + " dropped a " + target + " on the ground.");
-					return "You dropped the " + target + " from your " + origin + ".";
-				}
+				location->broadcast(name() + " dropped a " + target + " on the ground.");
+				return "You dropped a " + target + " from your " + origin + ".";
 			}
 			else
 			{
@@ -343,6 +269,36 @@ namespace teh
 			}
 		}
 		return "Unable to find any item named '" + target + "'.";
+	}
+	
+	std::string RPGCharacter::examine(const std::string& origin, const std::string& target, unsigned int targetn)
+	{
+		RPGInventory* origininv = 0;
+		if (origin == "ground")
+		{
+			origininv = get_location()->get_inventory();
+		}
+		else
+		{
+			origininv = get_inventory(origin);
+		}
+		
+		if (!origininv)
+		{
+			return "Unable to locate that inventory";
+		}
+		
+		RPGItemInstance* targetitem = origininv->select(target, targetn);
+		
+		if (!targetitem)
+		{
+			return "Unable to find any item named '" + target + "'.";
+		}
+		
+		std::stringstream out;
+		out << "You examine the " + targetitem->type()->name() << ": " << targetitem->type()->description() << "\n";
+		out << "It looks to be about " << targetitem->type()->size() << " cubic meters, and " << targetitem->type()->mass() << "kg";
+		return out.str();
 	}
 	
 	RPGInventory* RPGCharacter::get_inventory(const std::string& name)

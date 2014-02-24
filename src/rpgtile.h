@@ -19,11 +19,14 @@ namespace teh
 			const static std::string eastdir;
 			const static std::string westdir;
 		
+			static std::string opposite_direction(const std::string& direction);
+		
 			static RPGTile* build(RPGGame* parent, const long int& xpos, const long int& ypos, bool solid = true, const std::string& description = "");
 			RPGTile(unsigned int id, RPGGame* parent);
 		
 			std::vector<RPGCharacter*> get_occupants(bool loggedin=true);
 			void broadcast(const std::string& msg);
+			void broadcast_except(RPGCharacter* character, const std::string& msg);
 		
 			unsigned int id();
 		

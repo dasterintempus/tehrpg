@@ -32,6 +32,7 @@ namespace teh
 			void cmd_pickup(const Command& cmd);
 			void cmd_drop(const Command& cmd);
 			void cmd_inventory(const Command& cmd);
+			void cmd_examine(const Command& cmd);
 		
 			RPGGame* _parent;
 	};
