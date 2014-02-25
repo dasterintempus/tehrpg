@@ -17,7 +17,8 @@ namespace RPG
 	class Tile;
 	class Inventory;
 	class ItemType;
-	class ItemInstance;	
+	class ItemInstance;
+	class Object;
 	
 	class Game
 	{
@@ -53,6 +54,8 @@ namespace RPG
 			ItemType* find_itemtype(const std::string& name);
 			
 			ItemInstance* get_iteminstance(unsigned int id);
+			
+			Object* get_object(unsigned int objectid);
 		
 			MySQL* sql();
 			void message_client(const clientid& client, const std::string& message);
@@ -70,6 +73,7 @@ namespace RPG
 			std::map<unsigned int, Inventory*> _inventories;
 			std::map<unsigned int, ItemType*> _itemtypes;
 			std::map<unsigned int, ItemInstance*> _iteminstances;
+			std::map<unsigned int, Object*> _objects;
 	};
 }
 }

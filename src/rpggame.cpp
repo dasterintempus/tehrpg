@@ -7,6 +7,7 @@
 #include "rpginventory.h"
 #include "rpgitemtype.h"
 #include "rpgiteminstance.h"
+#include "rpgobject.h"
 #include "rpgcommandhandler.h"
 #include "rpgworld.h"
 #include "rpgworldbuilder2.h"
@@ -376,6 +377,32 @@ namespace RPG
 			delete conn;
 		}
 		return _iteminstances[id];
+	}
+	
+	Object* Game::get_object(unsigned int objectid)
+	{
+		if (_objects.count(objectid) == 0)
+		{
+			sql::Connection* conn = sql()->connect();
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT * FROM `Object` WHERE `id` = ?");
+			prep_stmt->setUInt(1, objectid);
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			if (res->rowsCount() == 1)
+			{
+				_objects[objectid] = new Object(objectid, this);
+			}
+			else
+			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
+				return 0;
+			}
+			delete res;
+			delete prep_stmt;
+			delete conn;
+		}
+		return _objects[objectid];
 	}
 	
 	MySQL* Game::sql()
