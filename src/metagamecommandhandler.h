@@ -6,11 +6,11 @@ namespace teh
 {
 	class GameServer;
 	
-	class GameCommandHandler
+	class MetagameCommandHandler
 		: public CommandHandlerInterface
 	{
 		public:
-			GameCommandHandler(GameServer* parent);
+			MetagameCommandHandler(GameServer* parent);
 			
 			void handle_command(const Command& cmd);
 			bool accepts_command(const Command& cmd);

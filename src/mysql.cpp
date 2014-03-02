@@ -47,21 +47,30 @@ namespace teh
 		return changed == 1;
 	}
 	
-	bool MySQL::validate_login(const std::string& username, const std::string& challenge, const std::string& challengeresponse)
+	bool MySQL::validate_login(unsigned int userid, const std::string& challenge, const std::string& challengeresponse)
 	{
 		sql::Connection* conn = connect();
 		
-		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `hashedpasswd` FROM `Users` WHERE `username` = ?");
-		prep_stmt->setString(1, username.c_str());
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `hashedpasswd` FROM `Users` WHERE `id` = ?");
+		prep_stmt->setUInt(1, userid);
 		sql::ResultSet* res = prep_stmt->executeQuery();
+		if (res->rowsCount() == 0)
+		{
+			delete res;
+			delete prep_stmt;
+			delete conn;
+			return false;
+		}
+		
 		res->next();
+		
 		std::string hashedpasswd = res->getString("hashedpasswd");
 		delete res;
 		delete prep_stmt;
 		delete conn;
 		
 		std::string hexpasswd = to_hex(hashedpasswd);
-		std::cerr << "Hex passwd: " << hexpasswd << std::endl;
+		//std::cerr << "Hex passwd: " << hexpasswd << std::endl;
 		
 		std::string goodresponse = hash_sha512(challenge + hexpasswd);
 		
@@ -70,12 +79,62 @@ namespace teh
 		return challengeresponse == hexgoodresponse;
 	}
 	
-	unsigned short int MySQL::get_permissions(const std::string& username)
+	unsigned int MySQL::get_userid(const std::string& username)
 	{
 		sql::Connection* conn = connect();
 		
-		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `permissions` FROM `Users` WHERE `username` = ?");
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Users` WHERE `username` = ?");
 		prep_stmt->setString(1, username.c_str());
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		if (res->rowsCount() == 0)
+		{
+			delete res;
+			delete prep_stmt;
+			delete conn;
+			return -1;
+		}
+		
+		res->next();
+		
+		unsigned int id = res->getUInt(1);
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
+		return id;
+	}
+	
+	std::string MySQL::get_username(unsigned int userid)
+	{
+		sql::Connection* conn = connect();
+		
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Users` WHERE `id` = ?");
+		prep_stmt->setUInt(1, userid);
+		sql::ResultSet* res = prep_stmt->executeQuery();
+		if (res->rowsCount() == 0)
+		{
+			delete res;
+			delete prep_stmt;
+			delete conn;
+			return "";
+		}
+		
+		res->next();
+		
+		std::string username = res->getString(1);
+		delete res;
+		delete prep_stmt;
+		delete conn;
+		
+		return username;
+	}
+	
+	unsigned short int MySQL::get_permissions(unsigned int userid)
+	{
+		sql::Connection* conn = connect();
+		
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `permissions` FROM `Users` WHERE `id` = ?");
+		prep_stmt->setUInt(1, userid);
 		
 		sql::ResultSet* res = prep_stmt->executeQuery();
 		
@@ -92,13 +151,13 @@ namespace teh
 		return result;
 	}
 	
-	bool MySQL::set_permissions(const std::string& username, const unsigned short int& permissions)
+	bool MySQL::set_permissions(unsigned int userid, const unsigned short int& permissions)
 	{
 		sql::Connection* conn = connect();
 		
-		sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `Users` SET `permissions` = ? WHERE `username` = ?");
+		sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `Users` SET `permissions` = ? WHERE `id` = ?");
 		prep_stmt->setUInt(1, permissions);
-		prep_stmt->setString(2, username.c_str());
+		prep_stmt->setUInt(2, userid);
 		
 		bool result = false;
 		if (prep_stmt->executeUpdate() == 1)

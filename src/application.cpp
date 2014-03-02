@@ -3,7 +3,7 @@
 #include "gameserver.h"
 #include "consoleconnection.h"
 #include "mysql.h"
-#include "rpggame.h"
+#include "rpgengine.h"
 #include "commandparser.h"
 
 #include <iostream>
@@ -12,10 +12,10 @@
 namespace teh
 {
 	Application::Application()
-		: _gameserver(0), _netserver(0), _rpggame(0),
+		: _gameserver(0), _netserver(0), _rpgengine(0),
 		_gameserverthread(0),
 		_netserverthread(0),
-		_rpggamethread(0),
+		_rpgenginethread(0),
 		_consolethread(0),
 		_done(false),
 		_consoleconnection(0),
@@ -40,10 +40,10 @@ namespace teh
 			delete _consolethread;
 		if (_mysql)
 			delete _mysql;
-		if (_rpggame)
-			delete _rpggame;
-		if (_rpggamethread)
-			delete _rpggamethread;
+		if (_rpgengine)
+			delete _rpgengine;
+		if (_rpgenginethread)
+			delete _rpgenginethread;
 		if (_commandparser)
 			delete _commandparser;
 	}
@@ -114,8 +114,8 @@ namespace teh
 
 		_mysql = new MySQL(_vm["sqlhost"].as<std::string>(), _vm["sqlport"].as<unsigned short int>(), _vm["sqluser"].as<std::string>(), _vm["sqlpass"].as<std::string>(), _vm["sqldb"].as<std::string>());
 	
-		_rpggame = new RPG::Game(this, _gameserver);
-		_rpggamethread = new sf::Thread(&RPG::Game::start, _rpggame);
+		_rpgengine = new RPG::Engine(this, _gameserver);
+		_rpgenginethread = new sf::Thread(&RPG::Engine::start, _rpgengine);
 	
 		_commandparser = new CommandParser();
 
@@ -138,7 +138,7 @@ namespace teh
 		
 		_netserverthread->launch();
 		
-		_rpggamethread->launch();
+		_rpgenginethread->launch();
 		
 		_donemutex.lock();
 		while (!_done)
@@ -166,8 +166,8 @@ namespace teh
 		_gameserverthread->wait();
 		std::cerr << "Gameserver thread completed" << std::endl;
 		
-		_rpggame->finish();
-		_rpggamethread->wait();
+		_rpgengine->finish();
+		_rpgenginethread->wait();
     
 		return 0;
 	}
@@ -185,9 +185,9 @@ namespace teh
 		return _mysql;
 	}
 	
-	RPG::Game* Application::rpg()
+	RPG::Engine* Application::rpg()
 	{
-		return _rpggame;
+		return _rpgengine;
 	}
 	
 	CommandParser* Application::parser()

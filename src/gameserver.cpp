@@ -3,9 +3,8 @@
 
 #include "application.h"
 #include "mysql.h"
-#include "rpggame.h"
-#include "rpgcharacter.h"
-#include "gamecommandhandler.h"
+#include "rpgengine.h"
+#include "metagamecommandhandler.h"
 
 namespace teh
 {
@@ -15,7 +14,7 @@ namespace teh
 	//
 	
 	GameClient::GameClient(GameConnectionInterface* conn)
-		: _conn(conn), _state(WelcomeState), _permissions(UserPermissions)
+		: _conn(conn), _userid(0), _state(WelcomeState), _permissions(UserPermissions)
 	{
 		generate_challenge();
 	}
@@ -66,14 +65,14 @@ namespace teh
 		_state = s;
 	}
 	
-	std::string GameClient::username()
+	unsigned int GameClient::userid()
 	{
-		return _username;
+		return _userid;
 	}
 	
-	void GameClient::username(const std::string& un)
+	void GameClient::userid(const unsigned int& id)
 	{
-		_username = un;
+		_userid = id;
 	}
 	
 	unsigned short int GameClient::permissions()
@@ -149,7 +148,7 @@ namespace teh
 	
 	void GameServer::init()
 	{
-		_parent->parser()->add_handler(new GameCommandHandler(this));
+		_parent->parser()->add_handler(new MetagameCommandHandler(this));
 	}
 	
 	void GameServer::start()
@@ -197,12 +196,12 @@ namespace teh
 		return -1;
 	}
 	
-	clientid GameServer::find_from_username(const std::string& username)
+	clientid GameServer::find_from_userid(const unsigned int& id)
 	{
 		sf::Lock clientslock(_clientsmutex);
 		for (std::map<clientid, GameClient*>::const_iterator i = _clients.begin();i != _clients.end(); i++)
 		{
-			if ((*i).second->username() == username && (*i).second->state() != GameClient::LoginState)
+			if ((*i).second->userid() == id && (*i).second->state() != GameClient::LoginState)
 				return (*i).first;
 		}
 		return -1;
@@ -218,12 +217,6 @@ namespace teh
 	MySQL* GameServer::sql()
 	{
 		return _parent->sql();
-	}
-
-	bool GameServer::kill(const std::string& username, const std::string& killer)
-	{
-		clientid killid = find_from_username(username);
-		return kill(killid, killer);
 	}
 	
 	bool GameServer::kill(const clientid& id, const std::string& killer)
@@ -245,7 +238,7 @@ namespace teh
 	
 	void GameServer::update_permissions(GameClient* client)
 	{
-		client->permissions(_parent->sql()->get_permissions(client->username()));
+		client->permissions(_parent->sql()->get_permissions(client->userid()));
 	}
 	
 	void GameServer::process_line(const clientid& id, const std::string& line)

@@ -14,7 +14,7 @@ namespace teh
 	class MySQL;
 	namespace RPG
 	{
-		class Game;
+		class Engine;
 	}
 	class CommandParser;
 	class ConsoleConnection;
@@ -30,7 +30,7 @@ namespace teh
 			void finish();
 
 			MySQL* sql();
-			RPG::Game* rpg();
+			RPG::Engine* rpg();
 			CommandParser* parser();
 		private:
 			void start_gameserver();
@@ -38,7 +38,7 @@ namespace teh
 		
 			sf::Thread* _gameserverthread;
 			sf::Thread* _netserverthread;
-			sf::Thread* _rpggamethread;	
+			sf::Thread* _rpgenginethread;	
 			sf::Thread* _consolethread;			
 		
 			GameServer* _gameserver;
@@ -50,7 +50,7 @@ namespace teh
 			sf::Mutex _donemutex;
 
 			MySQL* _mysql;
-			RPG::Game* _rpggame;
+			RPG::Engine* _rpgengine;
 		
 			CommandParser* _commandparser;
 		

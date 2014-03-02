@@ -1,28 +1,31 @@
 #include "rpgcommandhandler.h"
-#include "rpggame.h"
-#include "rpgcharacter.h"
-#include "rpgtile.h"
+#include "rpgengine.h"
+#include "rpgentity.h"
+//#include "rpgcharacter.h"
+//#include "rpgtile.h"
 #include "mysql.h"
 #include "gameserver.h"
-#include "rpginventory.h"
-#include "rpgitemtype.h"
-#include "rpgiteminstance.h"
+//#include "rpginventory.h"
+//#include "rpgitemtype.h"
+//#include "rpgiteminstance.h"
+#include "rpgentityfactory.h"
 
 #include <sstream>
+
 
 namespace teh
 {
 namespace RPG
 {
-	CommandHandler::CommandHandler(Game* parent)
-		: _parent(parent)
+	CommandHandler::CommandHandler(Engine* engine)
+		: _engine(engine)
 	{
 		
 	}
 	
 	void CommandHandler::handle_command(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Entity* character = _engine->get_pc(cmd.client);
 		
 		std::string first = cmd.arguments[0];
 		if (first == "select" && !character)
@@ -35,11 +38,13 @@ namespace RPG
 			cmd_listchars(cmd);
 			return;
 		}
+		/*
 		else if (first == "addtile")
 		{
 			cmd_addtile(cmd);
 			return;
 		}
+		*/
 		else if (first == "makechar" && !character)
 		{
 			cmd_makechar(cmd);
@@ -50,12 +55,14 @@ namespace RPG
 			cmd_logout(cmd);
 			return;
 		}
+		/*
 		else if (first == "summonrock" && character)
 		{
 			cmd_summonrock(cmd);
 			return;
-		}
+		}*/
 		
+		/*
 		if (!character)
 			return;
 		
@@ -104,12 +111,13 @@ namespace RPG
 			cmd_examine(cmd);
 			return;
 		}
+		*/
 	}
 	
 	bool CommandHandler::accepts_command(const Command& cmd)
 	{
 		std::string first = cmd.arguments[0];
-		if (cmd.prefix == '\0')
+		/*if (cmd.prefix == '\0')
 		{
 			if (first == "say" ||
 				first == "where" ||
@@ -123,7 +131,7 @@ namespace RPG
 				first == "examine")
 				return true;
 		}
-		else if (cmd.prefix == '/')
+		else */if (cmd.prefix == '/')
 		{
 			if (first == "select" ||
 				first == "listchars" ||
@@ -132,7 +140,7 @@ namespace RPG
 				first == "logout" ||
 				first == "summonrock")
 				return true;
-		}
+		}/*
 		else if (cmd.prefix == '.' || cmd.prefix == '"' || cmd.prefix == '\'')
 		{
 			//say aliases
@@ -147,85 +155,71 @@ namespace RPG
 		{
 			//inventory alias
 			return true;
-		}
+		}*/
 		return false;
-	}
-	
-	void CommandHandler::handle_default(const Command& cmd)
-	{
-		Character* character = _parent->get_active_character(cmd.client);
-		if (!character)
-			return;
-		
-		
-		
-	}
-	
-	bool CommandHandler::accepts_default()
-	{
-		return true;
 	}
 	
 	void CommandHandler::cmd_select(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Entity* character = _engine->get_pc(cmd.client);
 		if (character)
 		{
-			_parent->message_client(cmd.client, "You are already playing as " + character->name());
+			_engine->message_client(cmd.client, "You are already playing as " + character->name());
 			return;
 		}
 		
 		if (cmd.arguments.size() != 2)
 		{
-			_parent->message_client(cmd.client, "Invalid usage of select command\nUsage: /select {charactername}");
+			_engine->message_client(cmd.client, "Invalid usage of select command\nUsage: /select {charactername}");
 		}
 		else
 		{
-			if (_parent->check_logged_in(cmd.arguments[1]) == -1)
+			if (!_engine->is_pc_name_active(cmd.arguments[1]))
 			{
-				character = _parent->select_character(cmd.client, cmd.arguments[1]);
-				if (character)
+				bool result = _engine->set_pc_name_played_by(cmd.arguments[1], cmd.client);
+				if (result)
 				{
-					_parent->message_client(cmd.client, "Selected character: " + cmd.arguments[1]);
-					Tile* location = character->get_location();
-					location->broadcast(character->name() + " appears magically!");
+					_engine->message_client(cmd.client, "Selected character: " + cmd.arguments[1]);
+					//Tile* location = character->get_location();
+					//location->broadcast(character->name() + " appears magically!");
 				}
 				else
 				{
-					_parent->message_client(cmd.client, "Unable to find that character on your account.");
+					_engine->message_client(cmd.client, "Unable to find that character on your account.");
 				}
 			}
 			else
 			{
 				//This should be impossible, as users can only login once. Planning for a future possibility.
-				_parent->message_client(cmd.client, "Character is already logged in.");
+				_engine->message_client(cmd.client, "Character is already logged in.");
 			}
 		}
 	}
 	
 	void CommandHandler::cmd_listchars(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Entity* character = _engine->get_pc(cmd.client);
 		
-		stringvector charnames = _parent->character_names(cmd.client);
-		_parent->message_client(cmd.client, "Characters:");
+		std::vector<std::string> charnames = _engine->get_character_names_of_client(cmd.client);
+		_engine->message_client(cmd.client, "Characters:");
 		for (unsigned int n = 0;n < charnames.size();n++)
 		{
 			if (character && character->name() == charnames[n])
 			{
-				_parent->message_client(cmd.client, "*" + charnames[n]);
+				_engine->message_client(cmd.client, "*" + charnames[n]);
 			}
 			else
 			{
-				_parent->message_client(cmd.client, charnames[n]);
+				_engine->message_client(cmd.client, charnames[n]);
 			}
 		}
-		_parent->message_client(cmd.client, "---");
+		_engine->message_client(cmd.client, "---");
 	}
 	
+	/*
 	void CommandHandler::cmd_addtile(const Command& cmd)
 	{
-		GameClient* gc = _parent->get_client(cmd.client);
+		GameClient* gc = _engine->get_client(cmd.client);
 		if (!gc)
 			return;
 		
@@ -236,122 +230,72 @@ namespace RPG
 				long int x = to_numeric<long int>(cmd.arguments[1]);
 				long int y = to_numeric<long int>(cmd.arguments[2]);
 				std::string description = cmd.arguments[3];
-				Tile* tile = Tile::build(_parent, x, y, false, description);
+				Tile* tile = Tile::build(_engine, x, y, false, description);
 				if (tile)
 				{
-					_parent->message_client(cmd.client, "Tile created.");
+					_engine->message_client(cmd.client, "Tile created.");
 				}
 				else
 				{
-					_parent->message_client(cmd.client, "Error creating tile.");
+					_engine->message_client(cmd.client, "Error creating tile.");
 				}
 			}
 			else
 			{
-				_parent->message_client(cmd.client, "Invalid arguments for /addtile.");
-				_parent->message_client(cmd.client, "Usage: /addtile {x} {y} {description}");
+				_engine->message_client(cmd.client, "Invalid arguments for /addtile.");
+				_engine->message_client(cmd.client, "Usage: /addtile {x} {y} {description}");
 			}
 		}
 		else
 		{
-			_parent->message_client(cmd.client, "Insufficient permissions.");
+			_engine->message_client(cmd.client, "Insufficient permissions.");
 		}
 	}
+	*/
 	
 	void CommandHandler::cmd_makechar(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Entity* character = _engine->get_pc(cmd.client);
 		if (character)
 			return;
 		
-		GameClient* gc = _parent->get_client(cmd.client);
+		GameClient* gc = _engine->get_client(cmd.client);
 		if (!gc)
 			return;
 		
-		std::string username = gc->username();
+		unsigned int userid = gc->userid();
 		
-		if (cmd.arguments.size() != 2 && cmd.arguments.size() != 4)
+		if (cmd.arguments.size() != 2)
 		{
-			_parent->message_client(cmd.client, "Invalid usage of /makechar command.");
-			_parent->message_client(cmd.client, "Usage: /makechar {name} [+{stat} -{stat}]");
+			_engine->message_client(cmd.client, "Invalid usage of /makechar command.");
+			_engine->message_client(cmd.client, "Usage: /makechar {name}");
 			return;
 		}
 		
 		std::string charname = cmd.arguments[1];
 		
-		std::map<std::string, unsigned short int> stats;
-		for (unsigned int n = 0;n < 6;n++)
-		{
-			stats[Character::StatNames[n]] = 10;
-		}
-		
-		if (cmd.arguments.size() == 4)
-		{
-			if (cmd.arguments[2][0] != '+' || cmd.arguments[3][0] != '-')
-			{
-				_parent->message_client(cmd.client, "Invalid usage of /makechar command.");
-				_parent->message_client(cmd.client, "Usage: /makechar {name} [+{stat} -{stat}]");
-				return;
-			}
-			std::string upstat = cmd.arguments[2].substr(1);
-			std::string downstat = cmd.arguments[3].substr(1);
-			std::string upstatreal;
-			std::string downstatreal;
-			for (unsigned int n = 0;n < 6;n++)
-			{
-				std::string statname = Character::StatNames[n];
-				if (statname.substr(0, upstat.size()) == upstat)
-				{
-					upstatreal = statname;
-				}
-				if (statname.substr(0, downstat.size()) == downstat)
-				{
-					downstatreal = statname;
-				}
-			}
-			if (upstatreal == "" || downstatreal == "")
-			{
-				_parent->message_client(cmd.client, "Unable to match stat names.");
-				_parent->message_client(cmd.client, "Invalid usage of /makechar command.");
-				_parent->message_client(cmd.client, "Usage: /makechar {name} [+{stat} -{stat}]");
-				return;
-			}
-			
-			if (upstatreal == downstatreal)
-			{
-				_parent->message_client(cmd.client, "You can't boost and lower the same stat.");
-				_parent->message_client(cmd.client, "Invalid usage of /makechar command.");
-				_parent->message_client(cmd.client, "Usage: /makechar {name} [+{stat} -{stat}]");
-				return;
-			}
-			
-			stats[upstatreal] += 2;
-			stats[downstatreal] -= 2;
-		}
-		
-		Tile* tile = _parent->get_tile(1);
-		
-		character = Character::build(_parent, charname, username, tile, stats);
+		character = constructPlayerCharacter(_engine, -1, -1, charname, userid);
 		if (character)
 		{
-			_parent->message_client(cmd.client, "Character created.");
+			_engine->message_client(cmd.client, "Character created.");
 			return;
 		}
 		else
 		{
-			_parent->message_client(cmd.client, "Unable to create character (name taken?)");
+			_engine->message_client(cmd.client, "Unable to create character (name taken?)");
 			return;
 		}
 	}
 	
 	void CommandHandler::cmd_logout(const Command& cmd)
 	{
-		_parent->logout(cmd.client);
+		_engine->logout(cmd.client);
 	}
 	
+	/*
 	void CommandHandler::cmd_summonrock(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -359,9 +303,9 @@ namespace RPG
 		
 		Inventory* ground = location->get_inventory();
 		
-		ItemType* rock = _parent->find_itemtype("rock");
+		ItemType* rock = _engine->find_itemtype("rock");
 		
-		ItemInstance* instance = ItemInstance::build(_parent, ground, rock);
+		ItemInstance* instance = ItemInstance::build(_engine, ground, rock);
 		if (instance)
 		{
 			location->broadcast(character->name() + " casts Summon Rock! A rock appears.");
@@ -371,10 +315,13 @@ namespace RPG
 			location->broadcast(character->name() + " casts Summon Rock! ...But it failed.");
 		}
 	}
-
+	*/
+	
+	
+	/*
 	void CommandHandler::cmd_say(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -413,34 +360,34 @@ namespace RPG
 	
 	void CommandHandler::cmd_where(const Command& cmd)
 	{	
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
 		Tile* location = character->get_location();
 		if (!location)
 		{
-			_parent->message_client(cmd.client, "Error! You are nowhere.");
+			_engine->message_client(cmd.client, "Error! You are nowhere.");
 		}
 		else
 		{
 			std::stringstream sstream;
 			sstream << "You are at X: " << location->xpos() << " Y: " << location->ypos();
-			_parent->message_client(cmd.client, sstream.str());
+			_engine->message_client(cmd.client, sstream.str());
 		}
 	}
 	
 	void CommandHandler::cmd_move(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
 		Tile* destination = 0;
 		if (cmd.arguments.size() != 2)
 		{
-			_parent->message_client(cmd.client, "Invalid usage of move command.");
-			_parent->message_client(cmd.client, "Usage: move {east|west|north|south}");
+			_engine->message_client(cmd.client, "Invalid usage of move command.");
+			_engine->message_client(cmd.client, "Usage: move {east|west|north|south}");
 			return;
 		}
 		else if (cmd.arguments[1] == "east" || cmd.arguments[1] == "west" || cmd.arguments[1] == "north" || cmd.arguments[1] == "south")
@@ -449,43 +396,43 @@ namespace RPG
 		}
 		else
 		{
-			_parent->message_client(cmd.client, "Invalid usage of move command.");
-			_parent->message_client(cmd.client, "Usage: move {east|west|north|south}");
+			_engine->message_client(cmd.client, "Invalid usage of move command.");
+			_engine->message_client(cmd.client, "Usage: move {east|west|north|south}");
 			return;
 		}
 		
 		if (destination)
 		{
-			_parent->message_client(cmd.client, "Moved " + cmd.arguments[1]);
+			_engine->message_client(cmd.client, "Moved " + cmd.arguments[1]);
 			std::string looktext = character->look();
-			_parent->message_client(cmd.client, looktext);
+			_engine->message_client(cmd.client, looktext);
 		}
 		else
 		{
-			_parent->message_client(cmd.client, "Unable to move that direction.");
+			_engine->message_client(cmd.client, "Unable to move that direction.");
 		}
 	}
 	
 	void CommandHandler::cmd_look(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
 		if (cmd.arguments.size() != 1)
 		{
-			_parent->message_client(cmd.client, "Invalid usage of look command.");
-			_parent->message_client(cmd.client, "Usage: look");
+			_engine->message_client(cmd.client, "Invalid usage of look command.");
+			_engine->message_client(cmd.client, "Usage: look");
 			return;
 		}
 		
 		std::string looktext = character->look();
-		_parent->message_client(cmd.client, looktext);
+		_engine->message_client(cmd.client, looktext);
 	}
 	
 	void CommandHandler::cmd_emote(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -509,7 +456,7 @@ namespace RPG
 	
 	void CommandHandler::cmd_pickup(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -518,15 +465,15 @@ namespace RPG
 			std::string target = cmd.arguments[1];
 			if (!is_numeric<unsigned int>(cmd.arguments[2]))
 			{
-				_parent->message_client(cmd.client, "Invalid usage of pickup command.");
-				_parent->message_client(cmd.client, "Usage: pickup {itemname} [#] [inventoryname]");
+				_engine->message_client(cmd.client, "Invalid usage of pickup command.");
+				_engine->message_client(cmd.client, "Usage: pickup {itemname} [#] [inventoryname]");
 				return;
 			}
 			unsigned int n = to_numeric<unsigned int>(cmd.arguments[2]);
 			std::string destination = cmd.arguments[3];
 			
 			std::string message = character->pickup(target, n, destination);
-			_parent->message_client(cmd.client, message);
+			_engine->message_client(cmd.client, message);
 		}
 		else if (cmd.arguments.size() == 3)
 		{
@@ -536,32 +483,32 @@ namespace RPG
 				unsigned int n = 1;
 				std::string destination = cmd.arguments[2];
 				std::string message = character->pickup(target, n, destination);
-				_parent->message_client(cmd.client, message);
+				_engine->message_client(cmd.client, message);
 			}
 			else
 			{
 				unsigned int n = to_numeric<unsigned int>(cmd.arguments[2]);
 				std::string message = character->pickup(target, n);
-				_parent->message_client(cmd.client, message);
+				_engine->message_client(cmd.client, message);
 			}
 		}
 		else if (cmd.arguments.size() == 2)
 		{
 			std::string target = cmd.arguments[1];
 			std::string message = character->pickup(target);
-			_parent->message_client(cmd.client, message);
+			_engine->message_client(cmd.client, message);
 		}
 		else
 		{
-			_parent->message_client(cmd.client, "Invalid usage of pickup command.");
-			_parent->message_client(cmd.client, "Usage: pickup {itemname} [#] [inventoryname]");
+			_engine->message_client(cmd.client, "Invalid usage of pickup command.");
+			_engine->message_client(cmd.client, "Usage: pickup {itemname} [#] [inventoryname]");
 			return;
 		}
 	}
 	
 	void CommandHandler::cmd_drop(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -570,15 +517,15 @@ namespace RPG
 			std::string target = cmd.arguments[1];
 			if (!is_numeric<unsigned int>(cmd.arguments[2]))
 			{
-				_parent->message_client(cmd.client, "Invalid usage of drop command.");
-				_parent->message_client(cmd.client, "Usage: drop {itemname} [#] [inventoryname]");
+				_engine->message_client(cmd.client, "Invalid usage of drop command.");
+				_engine->message_client(cmd.client, "Usage: drop {itemname} [#] [inventoryname]");
 				return;
 			}
 			unsigned int n = to_numeric<unsigned int>(cmd.arguments[2]);
 			std::string destination = cmd.arguments[3];
 			
 			std::string message = character->drop(target, n, destination);
-			_parent->message_client(cmd.client, message);
+			_engine->message_client(cmd.client, message);
 		}
 		else if (cmd.arguments.size() == 3)
 		{
@@ -588,32 +535,32 @@ namespace RPG
 				unsigned int n = 1;
 				std::string destination = cmd.arguments[2];
 				std::string message = character->drop(target, n, destination);
-				_parent->message_client(cmd.client, message);
+				_engine->message_client(cmd.client, message);
 			}
 			else
 			{
 				unsigned int n = to_numeric<unsigned int>(cmd.arguments[2]);
 				std::string message = character->drop(target, n);
-				_parent->message_client(cmd.client, message);
+				_engine->message_client(cmd.client, message);
 			}
 		}
 		else if (cmd.arguments.size() == 2)
 		{
 			std::string target = cmd.arguments[1];
 			std::string message = character->drop(target);
-			_parent->message_client(cmd.client, message);
+			_engine->message_client(cmd.client, message);
 		}
 		else
 		{
-			_parent->message_client(cmd.client, "Invalid usage of drop command.");
-			_parent->message_client(cmd.client, "Usage: drop {itemname} [#] [inventoryname]");
+			_engine->message_client(cmd.client, "Invalid usage of drop command.");
+			_engine->message_client(cmd.client, "Usage: drop {itemname} [#] [inventoryname]");
 			return;
 		}
 	}
 	
 	void CommandHandler::cmd_inventory(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -628,9 +575,9 @@ namespace RPG
 		}
 		else if (cmd.arguments.size() != 1 && cmd.prefix == '@')
 		{
-			_parent->message_client(cmd.client, "Invalid usage of inventory command.");
-			_parent->message_client(cmd.client, "Usage: inventory [inventoryname]");
-			_parent->message_client(cmd.client, "Usage: @{inventoryname}");
+			_engine->message_client(cmd.client, "Invalid usage of inventory command.");
+			_engine->message_client(cmd.client, "Usage: inventory [inventoryname]");
+			_engine->message_client(cmd.client, "Usage: @{inventoryname}");
 			return;
 		}
 		
@@ -639,7 +586,7 @@ namespace RPG
 			Inventory* inv = character->get_inventory(invname);
 			if (!inv)
 			{
-				_parent->message_client(cmd.client, "You don't have an inventory named '" + invname + "'.");
+				_engine->message_client(cmd.client, "You don't have an inventory named '" + invname + "'.");
 				return;
 			}
 			std::stringstream message;
@@ -647,7 +594,7 @@ namespace RPG
 			message << inv->describe_contents() << "\n";
 			message << "It has " << inv->space_remaining() << " cubic meters of space left.\n";
 			message << "You are carrying " << character->carrying_mass() << "/" << character->max_carrying_mass() << " kg.";
-			_parent->message_client(cmd.client, message.str());
+			_engine->message_client(cmd.client, message.str());
 		}
 		else
 		{
@@ -660,13 +607,13 @@ namespace RPG
 				message << "It has " << inventories[n]->space_remaining() << " cubic meters of space left.\n";
 			}
 			message << "You are carrying " << character->carrying_mass() << "/" << character->max_carrying_mass() << " kg.";
-			_parent->message_client(cmd.client, message.str());
+			_engine->message_client(cmd.client, message.str());
 		}
 	}
 	
 	void CommandHandler::cmd_examine(const Command& cmd)
 	{
-		Character* character = _parent->get_active_character(cmd.client);
+		Character* character = _engine->get_active_character(cmd.client);
 		if (!character)
 			return;
 		
@@ -676,14 +623,14 @@ namespace RPG
 			std::string target = cmd.arguments[2];
 			if (!is_numeric<unsigned int>(cmd.arguments[3]))
 			{
-				_parent->message_client(cmd.client, "Invalid usage of examine command.");
-				_parent->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
+				_engine->message_client(cmd.client, "Invalid usage of examine command.");
+				_engine->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
 				return;
 			}
 			unsigned int n = to_numeric<unsigned int>(cmd.arguments[3]);
 			
 			std::string message = character->examine(origin, target, n);
-			_parent->message_client(cmd.client, message);
+			_engine->message_client(cmd.client, message);
 		}
 		else if (cmd.arguments.size() == 3)
 		{
@@ -692,21 +639,22 @@ namespace RPG
 			{
 				std::string target = cmd.arguments[2];
 				std::string message = character->examine(origin, target);
-				_parent->message_client(cmd.client, message);
+				_engine->message_client(cmd.client, message);
 			}
 			else
 			{
-				_parent->message_client(cmd.client, "Invalid usage of examine command.");
-				_parent->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
+				_engine->message_client(cmd.client, "Invalid usage of examine command.");
+				_engine->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
 				return;
 			}
 		}
 		else
 		{
-			_parent->message_client(cmd.client, "Invalid usage of examine command.");
-			_parent->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
+			_engine->message_client(cmd.client, "Invalid usage of examine command.");
+			_engine->message_client(cmd.client, "Usage: examine {'ground' | inventoryname} {itemname} [#]");
 			return;
 		}
 	}
+	*/
 }
 }

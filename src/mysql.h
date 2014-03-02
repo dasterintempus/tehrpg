@@ -21,9 +21,11 @@ namespace teh
 			~MySQL();
 		
 			bool register_user(const std::string& username, const std::string& password, const unsigned short int& permissions);
-			bool validate_login(const std::string& username, const std::string& challenge, const std::string& challengeresponse);
-			unsigned short int get_permissions(const std::string& username);
-			bool set_permissions(const std::string& username, const unsigned short int& permissions);
+			bool validate_login(unsigned int userid, const std::string& challenge, const std::string& challengeresponse);
+			unsigned int get_userid(const std::string& username);
+			std::string get_username(unsigned int userid);
+			unsigned short int get_permissions(unsigned int userid);
+			bool set_permissions(unsigned int userid, const unsigned short int& permissions);
 		
 			sql::Connection* connect();
 		private:

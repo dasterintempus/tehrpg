@@ -44,15 +44,15 @@ namespace teh
 			GameClient::State state();
 			void state(const GameClient::State& s);
 			
-			std::string username();
-			void username(const std::string& un);
+			unsigned int userid();
+			void userid(const unsigned int& id);
 			
 			unsigned short int permissions();
 			void permissions(const unsigned short int& p);
 			
 			std::string challenge();
 		private:
-			std::string _username;
+			unsigned int _userid;
 			GameClient::State _state;
 			unsigned short int _permissions;
 			GameConnectionInterface* _conn;
@@ -80,12 +80,11 @@ namespace teh
 			void finish();
 		
 			clientid find_clientid(GameClient* client);
-			clientid find_from_username(const std::string& username);
+			clientid find_from_userid(const unsigned int& id);
 			GameClient* get_client(const clientid& id);
 		
 			MySQL* sql();
 		
-			bool kill(const std::string& username, const std::string& killer);
 			bool kill(const clientid& id, const std::string& killer);
 		
 			void shutdown(const std::string username);
