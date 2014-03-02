@@ -2,6 +2,8 @@
 
 #include <string>
 #include <map>
+#include <queue>
+#include <SFML/System.hpp>
 
 #include "typedefs.h"
 
@@ -16,6 +18,7 @@ namespace teh
 		class Entity;
 		class Component;
 		class System;
+		class Action;
 		
 		class Engine
 		{
@@ -45,17 +48,26 @@ namespace teh
 				std::vector<std::string> get_character_names_of_user(unsigned int userid);
 				std::vector<std::string> get_character_names_of_client(const clientid& client);
 				
+				void queueAction(unsigned int entityid, Action* action);
+				
 				void logout(const clientid& client);
 			
 				GameClient* get_client(const clientid& client);
 				
 				static bool valid_coord(const long int& xpos, const long int& ypos);
 			private:
+				void tick();
+				void cleanup();
+			
 				Application* _parent;
 				GameServer* _server;
 				std::map<unsigned int, Entity*> _entities;
 				std::map<std::string, System*> _systems;
 				std::map<clientid, unsigned int> _client2pc;
+				std::map<unsigned int, std::queue<Action*> > _entityactions;
+				
+				bool _done;
+				sf::Mutex _donemutex;
 		};
 	}
 }

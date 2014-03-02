@@ -16,6 +16,8 @@ namespace RPG
 			
 			void handle_command(const Command& cmd);
 			bool accepts_command(const Command& cmd);
+			void handle_default(const Command& cmd);
+			bool accepts_default();
 		private:
 			void cmd_select(const Command& cmd);
 			void cmd_listchars(const Command& cmd);

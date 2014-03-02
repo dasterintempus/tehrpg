@@ -9,6 +9,7 @@
 //#include "rpgitemtype.h"
 //#include "rpgiteminstance.h"
 #include "rpgentityfactory.h"
+#include "rpgsystem.h"
 
 #include <sstream>
 
@@ -157,6 +158,34 @@ namespace RPG
 			return true;
 		}*/
 		return false;
+	}
+	
+	void CommandHandler::handle_default(const Command& cmd)
+	{
+		Entity* character = _engine->get_pc(cmd.client);
+		if (!character)
+			return;
+		
+		System* parsesystem = _engine->get_system("commandparse");
+		bool ok = false;
+		std::string output = parsesystem->process_command(character, cmd, ok);
+		if (!ok && output == "")
+		{
+			_engine->message_client(cmd.client, "Failure: Unrecognized command.");
+		}
+		else if (!ok && output != "")
+		{
+			_engine->message_client(cmd.client, "Failure: " + output);
+		}
+		else if (ok && output != "")
+		{
+			_engine->message_client(cmd.client, "Success: " + output);
+		}
+	}
+	
+	bool CommandHandler::accepts_default()
+	{
+		return true;
 	}
 	
 	void CommandHandler::cmd_select(const Command& cmd)

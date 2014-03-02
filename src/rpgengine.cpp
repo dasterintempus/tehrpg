@@ -6,6 +6,7 @@
 #include "rpgcomponent.h"
 #include "rpgsystem.h"
 #include "rpgentityfactory.h"
+#include "rpgaction.h"
 #include "exceptions.h"
 #include "rpgcommandhandler.h"
 
@@ -16,7 +17,7 @@ namespace teh
 	namespace RPG
 	{
 		Engine::Engine(Application* parent, GameServer* server)
-			: _parent(parent), _server(server)
+			: _parent(parent), _server(server), _done(false)
 		{
 			//Ensure divine void exists
 			
@@ -25,14 +26,11 @@ namespace teh
 			{
 				tile = constructTile(this, -1, -1, "A divine void.", "A divine emptiness (where developers hang out and test things).");
 			}
-			
-			//Testing
-			
-			Entity* character = findCharacter(this, "Dasterin");
-			System* test = get_system("test");
-			std::string output = test->process(character);
-			std::cout << output << std::endl;
-			
+			Entity* tile2 = findTile(this, -1, 0);
+			if (!tile2)
+			{
+				tile2 = constructTile(this, -1, 0, "Stairs to Earth.", "The stairway down from the heavens.");
+			}
 		}
 		
 		Engine::~Engine()
@@ -56,11 +54,35 @@ namespace teh
 		void Engine::start()
 		{
 			init();
+			
+			sf::Clock clock;
+			
+			_donemutex.lock();
+			while (!_done)
+			{
+				_donemutex.unlock();
+				
+				while (clock.getElapsedTime() < sf::milliseconds(1500))
+				{
+					sf::sleep(sf::milliseconds(50));
+				}
+				sf::Time elapsed = clock.restart();
+				
+				while (elapsed.asMilliseconds() > 0)
+				{
+					tick();
+					elapsed -= sf::milliseconds(1500);
+				}
+				
+				_donemutex.lock();
+			}
+			_donemutex.unlock();
 		}
 		
 		void Engine::finish()
 		{
-			
+			sf::Lock donelock(_donemutex);
+			_done = true;
 		}
 
 		Entity* Engine::get_entity(unsigned int entityid)
@@ -74,6 +96,7 @@ namespace teh
 				if (res->rowsCount() == 1)
 				{
 					_entities[entityid] = new Entity(entityid, this);
+					_entityactions[entityid] = std::queue<Action*>(); //Just put something here
 				}
 				else
 				{
@@ -213,6 +236,11 @@ namespace teh
 			return get_character_names_of_user(userid);
 		}
 		
+		void Engine::queueAction(unsigned int entityid, Action* action)
+		{
+			_entityactions[entityid].push(action);
+		}
+		
 		void Engine::logout(const clientid& client)
 		{
 			if (_client2pc.count(client))
@@ -243,6 +271,30 @@ namespace teh
 				return false;
 			}
 			return true;
+		}
+		
+		void Engine::tick()
+		{
+			cleanup();
+			System* actionhandler = get_system("actionhandler");
+			for (auto i = _entityactions.begin(); i != _entityactions.end();i++)
+			{
+				Entity* entity = get_entity((*i).first);
+				if (!entity)
+					continue;
+				if ((*i).second.empty())
+					continue;
+				Action* action = (*i).second.front();
+				(*i).second.pop();
+				
+				actionhandler->process_action(action);
+				delete action;
+			}
+		}
+		
+		void Engine::cleanup()
+		{
+			//do nothing for now
 		}
 	}
 }

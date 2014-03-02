@@ -154,10 +154,9 @@ namespace teh
 			std::string tablename = componenttype() + "Components";
 			
 			sql::Connection* conn = _engine->sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `?` = ? WHERE `id` = ?");
-			prep_stmt->setString(1, key);
-			prep_stmt->setString(2, value);
-			prep_stmt->setUInt(3, id());
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
+			prep_stmt->setString(1, value);
+			prep_stmt->setUInt(2, id());
 			prep_stmt->execute();
 		}
 	
@@ -183,10 +182,9 @@ namespace teh
 			std::string tablename = componenttype() + "Components";
 			
 			sql::Connection* conn = _engine->sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `?` = ? WHERE `id` = ?");
-			prep_stmt->setString(1, key);
-			prep_stmt->setInt(2, value);
-			prep_stmt->setUInt(3, id());
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
+			prep_stmt->setInt(1, value);
+			prep_stmt->setUInt(2, id());
 			prep_stmt->execute();
 		}
 	
@@ -212,10 +210,9 @@ namespace teh
 			std::string tablename = componenttype() + "Components";
 			
 			sql::Connection* conn = _engine->sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `?` = ? WHERE `id` = ?");
-			prep_stmt->setString(1, key);
-			prep_stmt->setUInt(2, value);
-			prep_stmt->setUInt(3, id());
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
+			prep_stmt->setUInt(1, value);
+			prep_stmt->setUInt(2, id());
 			prep_stmt->execute();
 		}
 	
@@ -241,10 +238,9 @@ namespace teh
 			std::string tablename = componenttype() + "Components";
 			
 			sql::Connection* conn = _engine->sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `?` = ? WHERE `id` = ?");
-			prep_stmt->setString(1, key);
-			prep_stmt->setBoolean(2, value);
-			prep_stmt->setUInt(3, id());
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
+			prep_stmt->setBoolean(1, value);
+			prep_stmt->setUInt(2, id());
 			prep_stmt->execute();
 		}
 	}
