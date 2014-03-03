@@ -41,6 +41,7 @@ namespace teh
 				void message_client(const clientid& client, const std::string& message);
 			
 				Entity* get_pc(const clientid& client);
+				clientid get_player(Entity* entity);
 				bool is_pc_active(unsigned int entityid);
 				bool is_pc_name_active(const std::string& name);
 				bool set_pc_played_by(unsigned int entityid, const clientid& client);
@@ -48,7 +49,9 @@ namespace teh
 				std::vector<std::string> get_character_names_of_user(unsigned int userid);
 				std::vector<std::string> get_character_names_of_client(const clientid& client);
 				
-				void queueAction(unsigned int entityid, Action* action);
+				void message_entity(Entity* entity, const std::string& msg);
+				
+				void queue_action(unsigned int entityid, Action* action);
 				
 				void logout(const clientid& client);
 			

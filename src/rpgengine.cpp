@@ -150,6 +150,16 @@ namespace teh
 			return get_entity(_client2pc[client]);
 		}
 		
+		clientid Engine::get_player(Entity* entity)
+		{
+			for (auto i = _client2pc.begin(); i != _client2pc.end(); i++)
+			{
+				if ((*i).second == entity->id())
+					return (*i).first;
+			}
+			return -1;
+		}
+		
 		bool Engine::is_pc_active(unsigned int entityid)
 		{
 			for (auto i = _client2pc.begin(); i != _client2pc.end(); i++)
@@ -236,7 +246,16 @@ namespace teh
 			return get_character_names_of_user(userid);
 		}
 		
-		void Engine::queueAction(unsigned int entityid, Action* action)
+		void Engine::message_entity(Entity* entity, const std::string& msg)
+		{
+			clientid player = get_player(entity);
+			if (player != -1)
+			{
+				message_client(player, msg);
+			}
+		}
+		
+		void Engine::queue_action(unsigned int entityid, Action* action)
 		{
 			_entityactions[entityid].push(action);
 		}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace teh
 {
@@ -14,6 +15,8 @@ namespace teh
 		
 		Entity* findTile(Engine* engine, long int xpos, long int ypos);
 		Entity* findCharacter(Engine* engine, const std::string& name);
+		
+		std::vector<Entity*> findCharactersAt(Engine* engine, long int xpos, long int ypos);
 	}
 	
 }

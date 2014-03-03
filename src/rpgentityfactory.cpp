@@ -232,5 +232,33 @@ namespace teh
 			
 			return engine->get_entity(entityid);
 		}
+		
+		std::vector<Entity*> findCharactersAt(Engine* engine, long int xpos, long int ypos)
+		{
+			std::vector<Entity*> out;
+			
+			sql::Connection* conn = engine->sql()->connect();
+			
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Entities`.`id` FROM `Entities` JOIN `locationComponents` WHERE `Entities`.`id` = `locationComponents`.`entity_id` AND `Entities`.`type` LIKE '%.character.entity' AND `locationComponents`.`xpos` = ? AND `locationComponents`.`ypos` = ?");
+			prep_stmt->setInt(1, xpos);
+			prep_stmt->setInt(2, ypos);
+			
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			
+			while (res->next())
+			{
+				Entity* character = engine->get_entity(res->getUInt(1));
+				if (engine->is_pc_active(character->id()))
+				{
+					out.push_back(character);
+				}
+			}
+			
+			delete res;
+			delete prep_stmt;
+			delete conn;
+			
+			return out;
+		}
 	}
 }

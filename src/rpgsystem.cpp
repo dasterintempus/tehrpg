@@ -187,7 +187,7 @@ namespace teh
 			return 0;
 		}
 		
-		int LuaEP_act(lua_State* L)
+		int LuaEP_act_fcall(lua_State* L)
 		{
 			int argc = lua_gettop(L);
 			if (argc%2 != 1) //Needs odd number of arguments
@@ -211,7 +211,7 @@ namespace teh
 			if (np->type != ProxyEngine)
 			{
 				//TODO: Error?
-				lua_pop(L, argc);
+				lua_pop(L, argc+1);
 				return 0;
 			}
 			Engine* engine = np->engine;
@@ -227,7 +227,7 @@ namespace teh
 				{
 					std::cerr << "Unable to get userdata for act()" << std::endl;
 					//TODO: Error?
-					lua_pop(L, argc);
+					lua_pop(L, argc+1);
 					return 0;
 				}
 				LuaProxy* ep = static_cast<LuaProxy*>(ud);
@@ -235,7 +235,7 @@ namespace teh
 				{
 					std::cerr << "userdata is not ProxyEntity for act()" << std::endl;
 					//TODO: Error?
-					lua_pop(L, argc);
+					lua_pop(L, argc+1);
 					return 0;
 				}
 				Entity* nentity = ep->entity;
@@ -245,7 +245,44 @@ namespace teh
 			lua_pop(L, argc+1);
 			
 			Action* action = new Action(origin, targets);
-			engine->queueAction(entity->id(), action);
+			engine->queue_action(entity->id(), action);
+			return 0;
+		}
+		
+		int LuaEP_msg_fcall(lua_State* L)
+		{
+			int argc = lua_gettop(L);
+			if (argc != 1)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			void* ptr = lua_touserdata(L, lua_upvalueindex(1));
+			if (!ptr)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			Entity* entity = static_cast<Entity*>(ptr);
+			std::string msg = lua_tostring(L, 1);
+			
+			lua_getglobal(L, "engine");
+			LuaProxy* np = static_cast<LuaProxy*>(lua_touserdata(L, -1));
+			//lua_pop(L, 1);
+			if (np->type != ProxyEngine)
+			{
+				//TODO: Error?
+				lua_pop(L, 2);
+				return 0;
+			}
+			Engine* engine = np->engine;
+			
+			lua_pop(L, 2);
+			
+			engine->message_entity(entity, msg);
+			
 			return 0;
 		}
 		
@@ -301,11 +338,59 @@ namespace teh
 			else if (key == "act")
 			{
 				lua_pushlightuserdata(L, ep->entity);
-				lua_pushcclosure(L, &LuaEP_act, 1);
+				lua_pushcclosure(L, &LuaEP_act_fcall, 1);
+				return 1;
+			}
+			else if (key == "msg")
+			{
+				lua_pushlightuserdata(L, ep->entity);
+				lua_pushcclosure(L, &LuaEP_msg_fcall, 1);
 				return 1;
 			}
 			
 			return 0;
+		}
+		
+		int LuaEP_mm_eq(lua_State* L)
+		{
+			int argc = lua_gettop(L);
+			if (argc != 2)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			void* ud1 = lua_touserdata(L, 1);
+			if (!ud1)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			LuaProxy* ep1 = static_cast<LuaProxy*>(ud1);
+			if (ep1->type != ProxyEntity)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			void* ud2 = lua_touserdata(L, 2);
+			if (!ud2)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			LuaProxy* ep2 = static_cast<LuaProxy*>(ud2);
+			if (ep2->type != ProxyEntity)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			
+			lua_pushboolean(L, ep1->entity->id() == ep2->entity->id());
+			return 1;
 		}
 		
 		int LuaNP_system_mm_index(lua_State* L)
@@ -343,35 +428,29 @@ namespace teh
 			return 0;
 		}
 		
-		int LuaNP_map_mm_call(lua_State* L)
+		int LuaNP_tile_at_fcall(lua_State* L)
 		{
 			int argc = lua_gettop(L);
-			if (argc != 3)
+			if (argc != 2)
 			{
 				//TODO: Error?
 				lua_pop(L, argc);
 				return 0;
 			}
-			void* ud = lua_touserdata(L, 1);
+			void* ud = lua_touserdata(L, lua_upvalueindex(1));
 			if (!ud)
 			{
 				//TODO: Error?
 				lua_pop(L, argc);
 				return 0;
 			}
-			LuaProxy* np = static_cast<LuaProxy*>(ud);
-			if (np->type != ProxyEngine)
-			{
-				//TODO: Error?
-				lua_pop(L, argc);
-				return 0;
-			}
+			Engine* engine = static_cast<Engine*>(ud);
 			
-			int xpos = (int)lua_tonumber(L, 2);
-			int ypos = (int)lua_tonumber(L, 3);
-			lua_pop(L, 3);
+			int xpos = (int)lua_tonumber(L, 1);
+			int ypos = (int)lua_tonumber(L, 2);
+			lua_pop(L, 2);
 			
-			Entity* tile = findTile(np->engine, xpos, ypos);
+			Entity* tile = findTile(engine, xpos, ypos);
 			if (tile)
 			{
 				System::pushEntity(L, tile);
@@ -379,6 +458,41 @@ namespace teh
 			}
 			
 			return 0;
+		}
+		
+		int LuaNP_characters_at_fcall(lua_State* L)
+		{
+			int argc = lua_gettop(L);
+			if (argc != 2)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			void* ud = lua_touserdata(L, lua_upvalueindex(1));
+			if (!ud)
+			{
+				//TODO: Error?
+				lua_pop(L, argc);
+				return 0;
+			}
+			Engine* engine = static_cast<Engine*>(ud);
+			
+			int xpos = (int)lua_tonumber(L, 1);
+			int ypos = (int)lua_tonumber(L, 2);
+			lua_pop(L, 2);
+			
+			std::vector<Entity*> characters = findCharactersAt(engine, xpos, ypos);
+			std::cerr << "Characters vector size: " << characters.size() << std::endl;
+			std::cerr << "Coord: " << xpos << ", " << ypos << std::endl;
+			lua_newtable(L);
+			for (unsigned int n = 0;n < characters.size(); n++)
+			{
+				lua_pushnumber(L, n+1);
+				System::pushEntity(L, characters[n]);
+				lua_settable(L, -3);
+			}
+			return 1;
 		}
 		
 		int LuaNP_mm_index(lua_State* L)
@@ -421,17 +535,17 @@ namespace teh
 				
 				return 1;
 			}
-			else if (key == "map")
+			else if (key == "tile_at")
 			{
-				void* ud2 = lua_newuserdata(L, sizeof(np));
-				*static_cast<LuaProxy*>(ud2) = *np;
+				lua_pushlightuserdata(L, np->engine);
+				lua_pushcclosure(L, &LuaNP_tile_at_fcall, 1);
 				
-				//make the metatable
-				lua_newtable(L);
-				lua_pushstring(L, "__call");
-				lua_pushcfunction(L, &LuaNP_map_mm_call);
-				lua_settable(L, -3);
-				lua_setmetatable(L, -2);
+				return 1;
+			}
+			else if (key == "characters_at")
+			{
+				lua_pushlightuserdata(L, np->engine);
+				lua_pushcclosure(L, &LuaNP_characters_at_fcall, 1);
 				
 				return 1;
 			}
@@ -466,12 +580,15 @@ namespace teh
 			std::string funcname = lua_tostring(L, lua_upvalueindex(1));
 			System* other = sp->system;
 			
+			//Get the backtracer on other-L()
+			lua_getglobal(other->L(), "_backtracer");
+			
 			std::cerr << "looking for function: " << funcname << std::endl;
 			
 			lua_getglobal(other->L(), funcname.c_str());
 			if (lua_isnil(other->L(), -1))
 			{
-				lua_pop(other->L(), 1);
+				lua_pop(other->L(), 2);
 				lua_pop(L, argc);
 				return 0;
 			}
@@ -482,7 +599,23 @@ namespace teh
 			//Clean up this stack
 			lua_pop(L, argc);
 			
-			lua_call(other->L(), callargc, LUA_MULTRET);
+			int callresult = lua_pcall(other->L(), callargc, LUA_MULTRET, 1);
+			if (callresult)
+			{
+				if (callresult == LUA_ERRRUN)
+				{
+					std::cerr << lua_tostring(other->L(), -1);
+					lua_pop(other->L(), lua_gettop(other->L()));
+					return 0;
+				}
+				else if (callresult == LUA_ERRERR)
+				{
+					std::cerr << "Lua error handler error" << std::endl;
+					return 0;
+				}
+			}
+			
+			lua_remove(other->L(), 1); // remove the backtracer
 			
 			//pull arguments back
 			int resultargc = System::copyStack(other->L(), 1, L);
@@ -605,6 +738,32 @@ namespace teh
 			return 0;
 		}
 		
+		int LuaDebug_backtrace(lua_State* L)
+		{
+			std::stringstream msg;
+			msg << "Lua error: " << lua_tostring(L, 1) << std::endl;
+			lua_pop(L, 1);
+			lua_Debug debug;
+			int stackdepth = 0;
+			while (lua_getstack(L, stackdepth, &debug))
+			{
+				lua_getinfo(L, "nSl", &debug);
+				if (debug.name)
+				{
+					msg << "Line: " << debug.currentline << " in function " << debug.name << " in file " << debug.short_src << " at stack depth " << stackdepth << std::endl;
+				}
+				else
+				{
+					msg << "Line: " << debug.currentline << " in function " << "UNDETERMINED" << " in file " << debug.short_src << " at stack depth " << stackdepth << std::endl;
+				}
+				
+				stackdepth++;
+			}
+			lua_pushstring(L, msg.str().c_str());
+			std::cout << msg.str();
+			return 1;
+		}
+		
 		System::System(const std::string& name, Engine* engine)
 			: _name(name), _engine(engine), _L(0)
 		{
@@ -623,41 +782,76 @@ namespace teh
 		
 		std::string System::process_command(Entity* entity, const Command& cmd, bool& ok)
 		{
+			lua_getglobal(L(), "_backtracer");
+			
 			lua_getglobal(L(), "process_command");
 			if (lua_isnil(L(), -1))
 			{
-				lua_pop(L(), 1);
+				lua_pop(L(), 2);
 				return "";
 			}
-
+			
 			pushEntity(L(), entity);
 			System::pushStringVector(L(), cmd.arguments);
 
-			lua_call(L(), 2, 2);
+			int result = lua_pcall(L(), 2, 2, 1);
+			if (result)
+			{
+				if (result == LUA_ERRRUN)
+				{
+					std::cerr << "Lua runtime error: " << std::endl;
+					std::cerr << lua_tostring(L(), -1);
+					lua_pop(L(), lua_gettop(L()));
+					ok = false;
+					return "";
+				}
+				else if (result == LUA_ERRERR)
+				{
+					std::cerr << "Lua error handler error" << std::endl;
+					ok = false;
+					return "";
+				}
+			}
 			
-			bool result = lua_toboolean(L(), 1);
-			std::string output = lua_tostring(L(), 2);
-			lua_pop(L(), 2);
-			
-			ok = result;
+			ok = lua_toboolean(L(), -2);
+			std::string output = lua_tostring(L(), -1);
+			lua_pop(L(), 3);
 			
 			return output;
 		}
 		
 		int System::process_action(Action* action)
 		{
+			lua_getglobal(L(), "_backtracer");
+			
 			lua_getglobal(L(), "process_action");
 			if (lua_isnil(L(), -1))
 			{
-				lua_pop(L(), 1);
+				lua_pop(L(), 2);
 				return -1;
 			}
 			
 			pushAction(L(), action);
-			lua_call(L(), 1, 1);
 			
-			int output = (int)lua_tonumber(L(), 1);
-			lua_pop(L(), 1);
+			int result = lua_pcall(L(), 1, 1, 1);
+			if (result)
+			{
+				if (result == LUA_ERRRUN)
+				{
+					std::cerr << "Lua runtime error: " << std::endl;
+					std::cerr << lua_tostring(L(), -1);
+					lua_pop(L(), lua_gettop(L()));
+					return -1;
+				}
+				else if (result == LUA_ERRERR)
+				{
+					std::cerr << "Lua error handler error" << std::endl;
+					return -1;
+				}
+			}
+			
+			int output = (int)lua_tonumber(L(), -1);
+			lua_pop(L(), 2);
 			
 			return output;
 		}
@@ -666,6 +860,8 @@ namespace teh
 		{
 			pushEngine(L(), _engine);
 			lua_setglobal(L(), "engine");
+			lua_pushcfunction(L(), LuaDebug_backtrace);
+			lua_setglobal(L(), "_backtracer");
 			//pushSystem(L(), this);
 			//lua_setglobal(L(), "this");
 		}
@@ -714,6 +910,9 @@ namespace teh
 			lua_newtable(L);
 			lua_pushstring(L, "__index");
 			lua_pushcfunction(L, &LuaEP_mm_index);
+			lua_settable(L, -3);
+			lua_pushstring(L, "__eq");
+			lua_pushcfunction(L, &LuaEP_mm_eq);
 			lua_settable(L, -3);
 			//lua_pushstring(L, "__newindex");
 			//lua_pushcfunction(L, &LuaEP_mm_newindex);

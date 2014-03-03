@@ -1,4 +1,4 @@
-function move(origin, dx, dy)
+function move(origin, dx, dy, dirname)
 	if (dx ~= 0 and dy ~= 0) or (dx == 0 and dy == 0) then
 		return false, "Invalid move."
 	end
@@ -7,9 +7,9 @@ function move(origin, dx, dy)
 	nx = location.xpos + dx
 	ny = location.ypos + dy
 	
-	destination = engine.map(nx, ny)
+	destination = engine.tile_at(nx, ny)
 	if destination ~= nil then
-		origin.act("move", "destination", destination)
+		origin.act("move", dirname, destination)
 		return true, "Moving..."
 	else
 		return false, "Unable to move that direction."
@@ -23,13 +23,13 @@ function handle_move(origin, command)
 		return false, usagestr
 	end
 	if command[2] == "north" or command[2] == "n" then
-		return move(origin, 0, -1)
+		return move(origin, 0, -1, "north")
 	elseif command[2] == "south" or command[2] == "s" then
-		return move(origin, 0, 1)
+		return move(origin, 0, 1, "south")
 	elseif command[2] == "west" or command[2] == "w" then
-		return move(origin, -1, 0)
+		return move(origin, -1, 0, "west")
 	elseif command[2] == "east" or command[2] == "e" then
-		return move(origin, 1, 0)
+		return move(origin, 1, 0, "east")
 	else
 		return false, usagestr
 	end
