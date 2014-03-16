@@ -12,6 +12,11 @@ namespace teh
 	class Application;
 	class MySQL;
 	
+	namespace RPG
+	{
+		class Engine;
+	}
+	
 	class GameClient
 		: public GameConnectionInterface
 	{
@@ -84,6 +89,7 @@ namespace teh
 			GameClient* get_client(const clientid& id);
 		
 			MySQL* sql();
+			RPG::Engine* rpg();
 		
 			bool kill(const clientid& id, const std::string& killer);
 		
@@ -94,7 +100,6 @@ namespace teh
 			//methods
 			void process_line(const clientid& id, const std::string& line);
 			std::string greeting(const clientid& id);
-			
 		
 			//members
 			std::map<clientid, GameClient*> _clients;

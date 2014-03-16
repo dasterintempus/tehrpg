@@ -1,14 +1,16 @@
+/*
 #include "rpgentityfactory.h"
 #include "rpgentity.h"
 #include "rpgengine.h"
 #include "rpgcomponent.h"
+#include "rpgworld.h"
 #include "mysql.h"
 
 namespace teh
 {
 	namespace RPG
 	{
-		Entity* constructTile(Engine* engine, long int xpos, long int ypos, const std::string& summary, const std::string& description)
+		Entity* constructTile(Engine* engine, long int xpos, long int ypos, const std::string& summary, const std::string& description, const std::string& terraintype)
 		{
 			sql::Connection* conn = engine->sql()->connect();
 			
@@ -65,6 +67,15 @@ namespace teh
 			prep_stmt = conn->prepareStatement("INSERT INTO `locationComponents` VALUES (NULL, ?, ?, ?)");
 			prep_stmt->setInt(1, xpos);
 			prep_stmt->setInt(2, ypos);
+			prep_stmt->setUInt(3, entityid);
+			
+			prep_stmt->execute();
+			delete prep_stmt;
+			
+			//terrain Component
+			prep_stmt = conn->prepareStatement("INSERT INTO `terrainComponents` VALUES (NULL, ?, ?, ?)");
+			prep_stmt->setString(1, terraintype);
+			prep_stmt->setInt(2, 100);
 			prep_stmt->setUInt(3, entityid);
 			
 			prep_stmt->execute();
@@ -150,14 +161,27 @@ namespace teh
 			prep_stmt->execute();
 			delete prep_stmt;
 			
-			//statistics Component
-			prep_stmt = conn->prepareStatement("INSERT INTO `statisticsComponents` VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)");
+			//abilities Component
+			prep_stmt = conn->prepareStatement("INSERT INTO `abilitiesComponents` VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)");
 			prep_stmt->setInt(1, 3);
 			prep_stmt->setInt(2, 3);
 			prep_stmt->setInt(3, 3);
 			prep_stmt->setInt(4, 3);
 			prep_stmt->setInt(5, 3);
 			prep_stmt->setInt(6, 3);
+			prep_stmt->setUInt(7, entityid);
+			
+			prep_stmt->execute();
+			delete prep_stmt;
+			
+			//battlestatistics Component
+			prep_stmt = conn->prepareStatement("INSERT INTO `battlestatisticsComponents` VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)");
+			prep_stmt->setInt(1, 10);
+			prep_stmt->setInt(2, 10);
+			prep_stmt->setInt(3, 4);
+			prep_stmt->setInt(4, 4);
+			prep_stmt->setInt(5, 7);
+			prep_stmt->setInt(6, 7);
 			prep_stmt->setUInt(7, entityid);
 			
 			prep_stmt->execute();
@@ -174,6 +198,89 @@ namespace teh
 			delete conn;
 			
 			return engine->get_entity(entityid);
+		}
+		
+		Entity* constructItemTemplate(Engine* engine, const std::string& usage, long int potency, const std::map<std::string, long int>& abilities, const std::map<std::string, long int>& statistics)
+		{
+			sql::Connection* conn = engine->sql()->connect();
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("INSERT INTO `Entities` VALUES (NULL, DEFAULT, 'template.item.entity')");
+			
+			try
+			{
+				prep_stmt->execute();
+			}
+			catch (sql::SQLException &e)
+			{
+				delete prep_stmt;
+				delete conn;
+				return 0;
+			}
+			
+			//get the entity id
+			prep_stmt = conn->prepareStatement("SELECT LAST_INSERT_ID()");
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			res->next();
+			unsigned int entityid = res->getUInt(1);
+			delete res;
+			delete prep_stmt;
+			
+			//item template component
+			prep_stmt = conn->prepareStatement("INSERT INTO `itemtemplateComponents` VALUES (NULL, ?, ?, ?)");
+			prep_stmt->setString(1, usage.c_str());
+			prep_stmt->setInt(2, potenct);
+			prep_stmt->setUInt(3, entityid);
+			
+			prep_stmt->execute();
+			delete prep_stmt;
+			
+			//abilities component
+			if (abilities.size() > 0)
+			{
+				
+			}
+		}
+		
+		World* constructWorld(Engine* engine)
+		{
+			//make sure we're not duplicating
+			if (engine->get_world())
+				return 0;
+			
+			sql::Connection* conn = engine->sql()->connect();
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("INSERT INTO `Entities` VALUES (NULL, ?, 'world.map.entity')");
+			prep_stmt->setString(1, "WORLD");
+			
+			try
+			{
+				prep_stmt->execute();
+			}
+			catch (sql::SQLException &e)
+			{
+				delete prep_stmt;
+				delete conn;
+				return 0;
+			}
+			
+			//get the entity id
+			prep_stmt = conn->prepareStatement("SELECT LAST_INSERT_ID()");
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			res->next();
+			unsigned int entityid = res->getUInt(1);
+			delete res;
+			delete prep_stmt;
+			
+			//location Component
+			prep_stmt = conn->prepareStatement("INSERT INTO `locationComponents` VALUES (NULL, ?, ?, ?)");
+			prep_stmt->setInt(1, -1);
+			prep_stmt->setInt(2, -1);
+			prep_stmt->setUInt(3, entityid);
+			
+			prep_stmt->execute();
+			delete prep_stmt;
+			
+			engine->set_world(entityid);
+			
+			return engine->get_world();
 		}
 		
 		Entity* findTile(Engine* engine, long int xpos, long int ypos)
@@ -262,3 +369,4 @@ namespace teh
 		}
 	}
 }
+*/

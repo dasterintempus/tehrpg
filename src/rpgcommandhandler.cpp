@@ -12,7 +12,7 @@
 #include "rpgsystem.h"
 
 #include <sstream>
-
+/*
 
 namespace teh
 {
@@ -39,13 +39,10 @@ namespace RPG
 			cmd_listchars(cmd);
 			return;
 		}
-		/*
 		else if (first == "addtile")
 		{
 			cmd_addtile(cmd);
 			return;
-		}
-		*/
 		else if (first == "makechar" && !character)
 		{
 			cmd_makechar(cmd);
@@ -56,14 +53,12 @@ namespace RPG
 			cmd_logout(cmd);
 			return;
 		}
-		/*
 		else if (first == "summonrock" && character)
 		{
 			cmd_summonrock(cmd);
 			return;
-		}*/
+		}
 		
-		/*
 		if (!character)
 			return;
 		
@@ -112,13 +107,12 @@ namespace RPG
 			cmd_examine(cmd);
 			return;
 		}
-		*/
 	}
 	
 	bool CommandHandler::accepts_command(const Command& cmd)
 	{
 		std::string first = cmd.arguments[0];
-		/*if (cmd.prefix == '\0')
+		if (cmd.prefix == '\0')
 		{
 			if (first == "say" ||
 				first == "where" ||
@@ -132,7 +126,7 @@ namespace RPG
 				first == "examine")
 				return true;
 		}
-		else */if (cmd.prefix == '/')
+		else if (cmd.prefix == '/')
 		{
 			if (first == "select" ||
 				first == "listchars" ||
@@ -141,7 +135,7 @@ namespace RPG
 				first == "logout" ||
 				first == "summonrock")
 				return true;
-		}/*
+		}
 		else if (cmd.prefix == '.' || cmd.prefix == '"' || cmd.prefix == '\'')
 		{
 			//say aliases
@@ -156,7 +150,7 @@ namespace RPG
 		{
 			//inventory alias
 			return true;
-		}*/
+		}
 		return false;
 	}
 	
@@ -190,6 +184,7 @@ namespace RPG
 	
 	void CommandHandler::cmd_select(const Command& cmd)
 	{
+		
 		Entity* character = _engine->get_pc(cmd.client);
 		if (character)
 		{
@@ -223,10 +218,12 @@ namespace RPG
 				_engine->message_client(cmd.client, "Character is already logged in.");
 			}
 		}
+		
 	}
 	
 	void CommandHandler::cmd_listchars(const Command& cmd)
 	{
+		
 		Entity* character = _engine->get_pc(cmd.client);
 		
 		std::vector<std::string> charnames = _engine->get_character_names_of_client(cmd.client);
@@ -243,9 +240,10 @@ namespace RPG
 			}
 		}
 		_engine->message_client(cmd.client, "---");
+		
 	}
 	
-	/*
+	
 	void CommandHandler::cmd_addtile(const Command& cmd)
 	{
 		GameClient* gc = _engine->get_client(cmd.client);
@@ -280,10 +278,11 @@ namespace RPG
 			_engine->message_client(cmd.client, "Insufficient permissions.");
 		}
 	}
-	*/
+	
 	
 	void CommandHandler::cmd_makechar(const Command& cmd)
 	{
+		
 		Entity* character = _engine->get_pc(cmd.client);
 		if (character)
 			return;
@@ -303,7 +302,8 @@ namespace RPG
 		
 		std::string charname = cmd.arguments[1];
 		
-		character = constructPlayerCharacter(_engine, -1, -1, charname, userid);
+		std::pair<long int, long int> spawn = _engine->globalspawnpoint();
+		character = constructPlayerCharacter(_engine, spawn.first, spawn.second, charname, userid);
 		if (character)
 		{
 			_engine->message_client(cmd.client, "Character created.");
@@ -314,6 +314,7 @@ namespace RPG
 			_engine->message_client(cmd.client, "Unable to create character (name taken?)");
 			return;
 		}
+		
 	}
 	
 	void CommandHandler::cmd_logout(const Command& cmd)
@@ -321,7 +322,7 @@ namespace RPG
 		_engine->logout(cmd.client);
 	}
 	
-	/*
+	
 	void CommandHandler::cmd_summonrock(const Command& cmd)
 	{
 		Character* character = _engine->get_active_character(cmd.client);
@@ -344,10 +345,10 @@ namespace RPG
 			location->broadcast(character->name() + " casts Summon Rock! ...But it failed.");
 		}
 	}
-	*/
 	
 	
-	/*
+	
+	
 	void CommandHandler::cmd_say(const Command& cmd)
 	{
 		Character* character = _engine->get_active_character(cmd.client);
@@ -684,6 +685,7 @@ namespace RPG
 			return;
 		}
 	}
-	*/
+	
 }
 }
+*/

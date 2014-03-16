@@ -29,6 +29,7 @@ namespace teh
 				static Schema getSchema(const std::string& componenttype, Engine* engine);
 				static ValueType getSchemaKeyType(const std::string& componenttype, Engine* engine, const std::string& key);
 			
+				Component(const std::string& componenttype, Engine* engine);
 				Component(const std::string& componenttype, Entity* parent, Engine* engine);
 				virtual ~Component();
 			
@@ -51,6 +52,10 @@ namespace teh
 				bool hasBool(const std::string& key) const;
 				void setBool(const std::string& key, const bool& value);
 				
+				bool validate();
+				int attach(Entity* entity);
+				
+				void destroy();
 			private:
 				unsigned int _id;	
 				std::string _componenttype;				

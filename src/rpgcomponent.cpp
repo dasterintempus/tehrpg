@@ -68,6 +68,33 @@ namespace teh
 			return TypeInvalid;
 		}
 		
+		Component::Component(const std::string& componenttype, Engine* engine)
+			: _id(0), _componenttype(componenttype), _parent(0), _engine(engine)
+		{
+			Schema schema = getSchema(componenttype, engine);
+			for (unsigned int n = 0; n < schema.size(); n++)
+			{
+				std::string name = schema[n].first;
+				ValueType type = schema[n].second;
+				if (type == TypeInt)
+				{
+					_ints[name] = 0;
+				}
+				else if (type == TypeUInt)
+				{
+					_uints[name] = 0;
+				}
+				else if (type == TypeString)
+				{
+					_strings[name] = "";
+				}
+				else if (type == TypeBool)
+				{
+					_bools[name] = false;
+				}
+			}
+		}
+		
 		Component::Component(const std::string& componenttype, Entity* parent, Engine* engine)
 			: _id(0), _componenttype(componenttype), _parent(parent), _engine(engine)
 		{
@@ -78,6 +105,12 @@ namespace teh
 			prep_stmt->setInt(1, _parent->id());
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			sql::ResultSetMetaData* meta = res->getMetaData();
+			
+			if (res->rowsCount() == 0)
+			{
+				throw teh::Exceptions::ComponentNotFound(componenttype, parent->id());
+			}
+			
 			res->next();
 			
 			_id = res->getUInt("id");
@@ -151,13 +184,16 @@ namespace teh
 				throw teh::Exceptions::ComponentSchemaViolation(_id, key, "string");
 			_strings[key] = value;
 			
-			std::string tablename = componenttype() + "Components";
-			
-			sql::Connection* conn = _engine->sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
-			prep_stmt->setString(1, value);
-			prep_stmt->setUInt(2, id());
-			prep_stmt->execute();
+			if (_id != 0)
+			{
+				std::string tablename = componenttype() + "Components";
+				
+				sql::Connection* conn = _engine->sql()->connect();
+				sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
+				prep_stmt->setString(1, value);
+				prep_stmt->setUInt(2, id());
+				prep_stmt->execute();
+			}
 		}
 	
 		long int Component::getInt(const std::string& key) const
@@ -179,13 +215,16 @@ namespace teh
 				throw teh::Exceptions::ComponentSchemaViolation(_id, key, "int");
 			_ints[key] = value;
 			
-			std::string tablename = componenttype() + "Components";
-			
-			sql::Connection* conn = _engine->sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
-			prep_stmt->setInt(1, value);
-			prep_stmt->setUInt(2, id());
-			prep_stmt->execute();
+			if (_id != 0)
+			{
+				std::string tablename = componenttype() + "Components";
+				
+				sql::Connection* conn = _engine->sql()->connect();
+				sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
+				prep_stmt->setInt(1, value);
+				prep_stmt->setUInt(2, id());
+				prep_stmt->execute();
+			}
 		}
 	
 		unsigned int Component::getUInt(const std::string& key) const
@@ -207,13 +246,16 @@ namespace teh
 				throw teh::Exceptions::ComponentSchemaViolation(_id, key, "uint");
 			_uints[key] = value;
 			
-			std::string tablename = componenttype() + "Components";
-			
-			sql::Connection* conn = _engine->sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
-			prep_stmt->setUInt(1, value);
-			prep_stmt->setUInt(2, id());
-			prep_stmt->execute();
+			if (_id != 0)
+			{
+				std::string tablename = componenttype() + "Components";
+				
+				sql::Connection* conn = _engine->sql()->connect();
+				sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
+				prep_stmt->setUInt(1, value);
+				prep_stmt->setUInt(2, id());
+				prep_stmt->execute();
+			}
 		}
 	
 		bool Component::getBool(const std::string& key) const
@@ -235,12 +277,139 @@ namespace teh
 				throw teh::Exceptions::ComponentSchemaViolation(_id, key, "bool");
 			_bools[key] = value;
 			
-			std::string tablename = componenttype() + "Components";
+			if (_id != 0)
+			{
+				std::string tablename = componenttype() + "Components";
+				
+				sql::Connection* conn = _engine->sql()->connect();
+				sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
+				prep_stmt->setBoolean(1, value);
+				prep_stmt->setUInt(2, id());
+				prep_stmt->execute();
+			}
+		}
+		
+		bool Component::validate()
+		{
+			Schema schema = getSchema(_componenttype, _engine);
+			
+			for (unsigned int n = 0;n < schema.size(); n++)
+			{
+				std::string key = schema[n].first;
+				ValueType vt = schema[n].second;
+				if (vt == TypeInt)
+				{
+					if (_ints.count(key) == 0)
+						return false;
+				}
+				else if (vt == TypeUInt)
+				{
+					if (_uints.count(key) == 0)
+						return false;
+				}
+				else if (vt == TypeString)
+				{
+					if (_strings.count(key) == 0)
+						return false;
+				}
+				else if (vt == TypeBool)
+				{
+					if (_bools.count(key) == 0)
+						return false;
+				}
+			}
+			return true;
+		}
+		
+		int Component::attach(Entity* entity)
+		{
+			if (_parent != 0)
+				return 1;
+			
+			if (!validate())
+				return -2;
+			
+			std::string tablename = _componenttype + "Components";
 			
 			sql::Connection* conn = _engine->sql()->connect();
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("UPDATE `" + tablename + "` SET `" + key + "` = ? WHERE `id` = ?");
-			prep_stmt->setBoolean(1, value);
-			prep_stmt->setUInt(2, id());
+			
+			Schema schema = getSchema(_componenttype, _engine);
+			
+			std::string querystr = "INSERT INTO `" + tablename + "` VALUES (NULL, ";
+			for (unsigned int n = 0; n < schema.size();n++)
+			{
+				querystr += "?, ";
+			}
+			querystr += "?)";
+			
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement(querystr);
+			for (unsigned int n = 0; n < schema.size();n++)
+			{
+				std::string key = schema[n].first;
+				ValueType vt = schema[n].second;
+				if (vt == TypeInt)
+				{
+					prep_stmt->setInt(n+1, _ints[key]);
+				}
+				else if (vt == TypeUInt)
+				{
+					prep_stmt->setUInt(n+1, _uints[key]);
+				}
+				else if (vt == TypeString)
+				{
+					prep_stmt->setString(n+1, _strings[key]);
+				}
+				else if (vt == TypeBool)
+				{
+					prep_stmt->setBoolean(n+1, _bools[key]);
+				}
+			}
+			prep_stmt->setUInt(schema.size()+1, entity->id());
+			
+			try
+			{
+				prep_stmt->execute();
+			}
+			catch (sql::SQLException &e)
+			{
+				std::cerr << e.what() << std::endl;
+				delete prep_stmt;
+				delete conn;
+				return -1;
+			}
+			
+			delete prep_stmt;
+			
+			//get the component id
+			prep_stmt = conn->prepareStatement("SELECT LAST_INSERT_ID()");
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			res->next();
+			_id = res->getUInt(1);
+			
+			delete res;
+			delete prep_stmt;
+			
+			delete conn;
+			
+			_parent = entity;
+			
+			_parent->takeownership(this);
+			
+			return 0;
+		}
+		
+		void Component::destroy()
+		{
+			if (_id == 0)
+				return;
+			
+			std::string tablename = _componenttype + "Components";
+			
+			sql::Connection* conn = _engine->sql()->connect();
+			
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("DELETE FROM `" + tablename + "` WHERE id = ?");
+			prep_stmt->setUInt(1, _id);
+			
 			prep_stmt->execute();
 		}
 	}

@@ -312,11 +312,11 @@ namespace teh
 				return Quad<otherT>::rectangle(left, top, right, bottom);
 			}
 			
-			bool contains(const Vec2<T>& point) const
+			/*bool contains(const Vec2<T>& point) const
 			{
 				unsigned short int intersections = 0;
 				T biggestside = std::max(a2b_distance(), std::max(b2c_distance(), std::max(c2d_distance(), d2a_distance())));
-				Vec2<T> raypoint(point.x()+(biggestside*2), point.y()+(biggestside*2));
+				Vec2<T> raypoint(point.x()+(biggestside*2), point.y());
 				
 				if (Vec2<T>::do_segments_intersect(point, raypoint, a(), b()))
 					intersections++;
@@ -328,6 +328,39 @@ namespace teh
 					intersections++;
 				
 				return (intersections%2) == 1;
+			}*/
+			bool contains(const Vec2<T>& point) const
+			{
+				int a2bwind = (point.x() - a().x()) * (b().y() - a().y()) - (b().x() - a().x()) * (point.y() - a().y());
+				int b2cwind = (point.x() - b().x()) * (c().y() - b().y()) - (c().x() - b().x()) * (point.y() - b().y());
+				int c2dwind = (point.x() - c().x()) * (d().y() - c().y()) - (d().x() - c().x()) * (point.y() - c().y());
+				int d2awind = (point.x() - d().x()) * (a().y() - d().y()) - (a().x() - d().x()) * (point.y() - d().y());
+				
+				if (a2bwind < 0 && b2cwind < 0 && c2dwind < 0 && d2awind < 0)
+					return true;
+				else if (a2bwind > 0 && b2cwind > 0 && c2dwind > 0 && d2awind > 0)
+					return true;
+				return false;
+			}
+			
+			bool fuzzycontains(const Vec2<T>& point) const
+			{
+				if (contains(point))
+					return true;
+				
+				if (contains(point + Vec2<T>(1,0)))
+					return true;
+				
+				if (contains(point + Vec2<T>(-1, 0)))
+					return true;
+				
+				if (contains(point + Vec2<T>(0, 1)))
+					return true;
+				
+				if (contains(point + Vec2<T>(0, -1)))
+					return true;
+				
+				return false;
 			}
 		private:
 			Vec2<T> _a;

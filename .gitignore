@@ -1,7 +1,9 @@
 .sconsign*
+testmodule/*
 build/*
 conf/*
 legacy/*
 *.png
 *.log
 *.o
+tehrpg.sql

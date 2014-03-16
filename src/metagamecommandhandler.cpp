@@ -1,6 +1,7 @@
 #include "metagamecommandhandler.h"
 #include "gameserver.h"
 #include "mysql.h"
+#include "rpgengine.h"
 
 namespace teh
 {
@@ -43,7 +44,7 @@ namespace teh
 			{
 				if (cmd.client == 0)
 				{
-					client->userid(1);
+					client->userid(-1);
 					client->state(GameClient::LoggedInState);
 					client->write_line("Welcome, root");
 				}
@@ -103,7 +104,7 @@ namespace teh
 			else if (first == "createacct")
 			{
 				//Check permissions
-				if (client->permissions() & GameClient::ServerAdminPermissions)
+				if (client->permissions() & GameClient::ServerAdminPermissions || cmd.client == 0)
 				{
 					if (cmd.arguments.size() != 3)
 					{
@@ -185,7 +186,8 @@ namespace teh
 			first == "shutdown" ||
 			first == "su" ||
 			first == "setperms" ||
-			first == "createacct")
+			first == "createacct" ||
+			first == "firstinit")
 				return true;
 		}
 		return false;

@@ -219,6 +219,11 @@ namespace teh
 		return _parent->sql();
 	}
 	
+	RPG::Engine* GameServer::rpg()
+	{
+		return _parent->rpg();
+	}
+	
 	bool GameServer::kill(const clientid& id, const std::string& killer)
 	{
 		if (id != 0 && _clients.count(id))

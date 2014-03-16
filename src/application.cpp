@@ -50,17 +50,19 @@ namespace teh
 	
 	int Application::init(int argc, char** argv)
 	{
-		srand(100);
+		srand(time(0));
 		
 		po::options_description generic_opts("Allowed options");
 		generic_opts.add_options()
 			("port", po::value<unsigned short int>()->default_value(3137), "Port for server to listen on for client connections")
+			("module", po::value<std::string>(), "Module path to game files")
 		;
 		
 		po::options_description cmdline_opts("Allowed command line options");
 		cmdline_opts.add_options()
 			("configfile,c", po::value<std::string>()->default_value("conf/tehrpg.conf"), "Config file path")
 			("help", "Output help message")
+			("firstinit", "Run initial setup for module")
 		;
 		
 		po::options_description config_opts("Allowed configuration options");
@@ -96,6 +98,12 @@ namespace teh
 			notify(_vm);
 		}
 		
+		if (_vm["module"].as<std::string>() == "")
+		{
+			std::cerr << "Need to specify module path" << std::endl;
+			return 2;
+		}
+		
 		if (_vm.count("help"))
 		{
 			std::cout << visible_config_opts;
@@ -114,10 +122,15 @@ namespace teh
 
 		_mysql = new MySQL(_vm["sqlhost"].as<std::string>(), _vm["sqlport"].as<unsigned short int>(), _vm["sqluser"].as<std::string>(), _vm["sqlpass"].as<std::string>(), _vm["sqldb"].as<std::string>());
 	
-		_rpgengine = new RPG::Engine(this, _gameserver);
+		_rpgengine = new RPG::Engine(this, _vm["module"].as<std::string>(), _gameserver);
 		_rpgenginethread = new sf::Thread(&RPG::Engine::start, _rpgengine);
 	
 		_commandparser = new CommandParser();
+		
+		if (_vm.count("firstinit"))
+		{
+			_rpgengine->firstinit();
+		}
 
 		return 0;
 	}
@@ -168,6 +181,8 @@ namespace teh
 		
 		_rpgengine->finish();
 		_rpgenginethread->wait();
+		
+		mysql_thread_end();
     
 		return 0;
 	}

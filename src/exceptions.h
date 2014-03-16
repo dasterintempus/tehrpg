@@ -15,6 +15,16 @@ namespace teh
 				unsigned int id;
 		};
 		
+		class ComponentNotFound
+			: public std::exception
+		{
+			public:
+				ComponentNotFound(const std::string& componenttype, unsigned int entityid);
+				virtual const char* what() const throw();
+				std::string componenttype;
+				unsigned int entityid;
+		};
+		
 		class ComponentSchemaViolation
 			: public std::exception
 		{
@@ -26,6 +36,17 @@ namespace teh
 				std::string type;
 		};
 		
+		class InvalidComponentDefinition
+			: public std::exception
+		{
+			public:
+				InvalidComponentDefinition(const std::string& component, const std::string& fieldname, const std::string& fieldtype);
+				virtual const char* what() const throw();
+				std::string component;
+				std::string fieldname;
+				std::string fieldtype;
+		};
+		
 		class InvalidSystem
 			: public std::exception
 		{
@@ -33,6 +54,15 @@ namespace teh
 				InvalidSystem(const std::string& name);
 				virtual const char* what() const throw();
 				std::string name;
+		};
+		
+		class SystemLuaError
+			: public std::exception
+		{
+			public:
+				SystemLuaError(const std::string& msg);
+				virtual const char* what() const throw();
+				std::string msg;
 		};
 	}
 }

@@ -49,7 +49,7 @@ elif env["MODE"] == "release":
 
 env.ParseConfig("mysql_config --libs")
 
-libs = ["cryptopp", "mysqlcppconn-static", "sfml-system", "sfml-network", "boost_regex", "boost_program_options", "lua"]
+libs = ["cryptopp", "mysqlcppconn-static", "sfml-system", "sfml-network", "boost_regex", "boost_program_options", "lua", "json-cpp"]
 env.Append(LIBS = libs)
 
 sources = Glob("src/*.cpp")
@@ -60,17 +60,27 @@ run = env.Command(source=buildpath, target="cerr.log", action="$SOURCE 2> $TARGE
 env.AlwaysBuild(run)
 env.Alias("run", run)
 
+runinit = env.Command(source=buildpath, target="initcerr.log", action="$SOURCE --firstinit 2> $TARGET")
+#env.Depends(server, run)
+env.AlwaysBuild(runinit)
+env.Alias("runinit", runinit)
+
 gdb = env.Command(source=buildpath, target="gdbcerr.log", action="gdb -ex 'run 2> $TARGET' $SOURCE")
 #env.Depends(server, gdb)
 env.AlwaysBuild(gdb)
 env.Alias("gdb", gdb)
 
+gdbinit = env.Command(source=buildpath, target="gdbinitcerr.log", action="gdb -ex 'run --firstinit 2> $TARGET' $SOURCE")
+#env.Depends(server, gdb)
+env.AlwaysBuild(gdbinit)
+env.Alias("gdbinit", gdbinit)
+
 memcheck = env.Command(source=buildpath, target="memcheck.log", action="valgrind --leak-check=full --show-reachable=yes --num-callers=20 $SOURCE 1>$TARGET 2>&1")
 env.AlwaysBuild(memcheck)
 env.Alias("memcheck", memcheck)
 
-mysql = env.Command(source="./tehrpg.sql", target="tehrpg", action="@mysql -u tehrpg -ptur7tle $TARGET < $SOURCE")
-env.AlwaysBuild(mysql)
-env.Alias("mysql-rebuild", mysql)
+#mysql = env.Command(source="./tehrpg.sql", target="tehrpg", action="@mysql -u tehrpg -ptur7tle $TARGET < $SOURCE")
+#env.AlwaysBuild(mysql)
+#env.Alias("mysql-rebuild", mysql)
 
 env.Default(server)

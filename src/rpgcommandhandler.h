@@ -2,6 +2,7 @@
 
 #include "commandparser.h"
 
+/*
 namespace teh
 {
 namespace RPG
@@ -25,8 +26,7 @@ namespace RPG
 			void cmd_makechar(const Command& cmd);
 			void cmd_logout(const Command& cmd);
 			//void cmd_summonrock(const Command& cmd);
-			
-			/*
+
 			void cmd_say(const Command& cmd);
 			void cmd_where(const Command& cmd);
 			void cmd_move(const Command& cmd);
@@ -36,10 +36,10 @@ namespace RPG
 			void cmd_drop(const Command& cmd);
 			void cmd_inventory(const Command& cmd);
 			void cmd_examine(const Command& cmd);
-			*/
 		
 			Engine* _engine;
 	};
 	
 }
 }
+*/

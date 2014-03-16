@@ -200,19 +200,15 @@ namespace teh
 		if (cmd.arguments.size() == 0)
 			return;
 		
-		bool handled = false;
 		for (std::list<CommandHandlerInterface*>::iterator i = _handlers.begin(); i != _handlers.end(); i++)
 		{
 			CommandHandlerInterface* handler = *i;
 			if (handler->accepts_command(cmd))
 			{
 				handler->handle_command(cmd);
-				handled = true;
-				//return;
+				return;
 			}
 		}
-		if (handled)
-			return;
 		
 		for (std::list<CommandHandlerInterface*>::iterator i = _handlers.begin(); i != _handlers.end(); i++)
 		{

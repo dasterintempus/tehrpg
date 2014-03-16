@@ -7,8 +7,10 @@
 #include "rpgsystem.h"
 #include "rpgentityfactory.h"
 #include "rpgaction.h"
+#include "rpgworld.h"
 #include "exceptions.h"
-#include "rpgcommandhandler.h"
+#include "luacommandhandler.h"
+#include "rpgworldbuilder.h"
 
 #include <iostream>
 
@@ -16,21 +18,10 @@ namespace teh
 {
 	namespace RPG
 	{
-		Engine::Engine(Application* parent, GameServer* server)
-			: _parent(parent), _server(server), _done(false)
+		Engine::Engine(Application* parent, const std::string& module, GameServer* server)
+			: _parent(parent), _module(module), _server(server), _done(false), _world(new World(this))
 		{
-			//Ensure divine void exists
-			
-			Entity* tile = findTile(this, -1, -1);
-			if (!tile)
-			{
-				tile = constructTile(this, -1, -1, "A divine void.", "A divine emptiness (where developers hang out and test things).");
-			}
-			Entity* tile2 = findTile(this, -1, 0);
-			if (!tile2)
-			{
-				tile2 = constructTile(this, -1, 0, "Stairs to Earth.", "The stairway down from the heavens.");
-			}
+			_moduleconfig = ReadJSONFile(get_module_path() + "module.json");
 		}
 		
 		Engine::~Engine()
@@ -43,12 +34,37 @@ namespace teh
 			{
 				delete (*i).second;
 			}
+			if (_world)
+				delete _world;
 		}
 		
 		
 		void Engine::init()
 		{
-			_parent->parser()->add_handler(new CommandHandler(this));
+			std::string startupstr = _moduleconfig.get("startup", Json::Value("")).asString();
+			
+			unsigned int pos = startupstr.find(':');
+			if (pos != std::string::npos)
+			{
+				std::string startupname = startupstr.substr(0, pos);
+				std::string startupfunction = startupstr.substr(pos+1);
+				System* startup = get_system(startupname);
+				startup->startup(startupfunction);
+			}
+			
+			Json::Value parsers = _moduleconfig.get("parsers", Json::Value());
+			std::vector<std::string> membernames = parsers.getMemberNames();
+			for (unsigned int n = 0;n < membernames.size();n++)
+			{
+				std::string prefixstr = membernames[n];
+				std::string parser = parsers[prefixstr].asString();
+				char prefix = prefixstr[0];
+				_parent->parser()->add_handler(new LuaCommandHandler(this, parser, prefix));
+			}
+			
+			_actionhandler = _moduleconfig.get("actionhandler", Json::Value("")).asString();
+			
+			get_world()->load();
 		}
 		
 		void Engine::start()
@@ -85,6 +101,42 @@ namespace teh
 			_done = true;
 		}
 
+		std::string Engine::get_etc(const std::string& key)
+		{
+			if (_etc.count(key) == 0)
+			{
+				sql::Connection* conn = sql()->connect();
+				sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `value` FROM `etc` WHERE `key` = ?");
+				prep_stmt->setString(1, key.c_str());
+				sql::ResultSet* res = prep_stmt->executeQuery();
+				if (res->rowsCount() == 0)
+				{
+					delete res;
+					delete prep_stmt;
+					delete conn;
+					return std::string();
+				}
+				res->next();
+				_etc[key] = res->getString(1);
+				delete res;
+				delete prep_stmt;
+				delete conn;
+			}
+			return _etc[key];
+		}
+		
+		void Engine::set_etc(const std::string& key, const std::string& value)
+		{
+			_etc[key] = value;
+			sql::Connection* conn = sql()->connect();
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("INSERT INTO `etc` (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = `value`");
+			prep_stmt->setString(1, key.c_str());
+			prep_stmt->setString(2, value.c_str());
+			prep_stmt->execute();
+			delete prep_stmt;
+			delete conn;
+		}
+		
 		Entity* Engine::get_entity(unsigned int entityid)
 		{
 			if (_entities.count(entityid) == 0)
@@ -112,6 +164,28 @@ namespace teh
 			return _entities[entityid];
 		}
 		
+		bool Engine::activate_entity(Entity* entity)
+		{
+			if (_entities.count(entity->id()) == 0)
+			{
+				_entities[entity->id()] = entity;
+				return true;
+			}
+			return false;
+		}
+		
+		void Engine::delete_entity(Entity* entity)
+		{
+			if (_entities.count(entity->id()) != 0)
+				_entities.erase(entity->id());
+			delete entity;
+		}
+		
+		World* Engine::get_world()
+		{
+			return _world;
+		}
+		
 		System* Engine::get_system(const std::string& name)
 		{
 			if (_systems.count(name) == 0)
@@ -126,9 +200,93 @@ namespace teh
 					std::cout << e.what() << std::endl;
 					return 0;
 				}
+				//catch (teh::Exceptions::SystemLuaError& e)
+				//{
+				//	std::cout << e.what() << std::endl;
+				//	return 0;
+				//}
 				_systems[name] = system;
 			}
 			return _systems[name];
+		}
+		
+		std::string Engine::get_module_path() const
+		{
+			return _module + "/";
+		}
+			
+		const Json::Value& Engine::get_module_config() const
+		{
+			return _moduleconfig;
+		}
+		
+		void	Engine::firstinit()
+		{
+			sql::Connection* conn = sql()->connect();
+			sql::Statement* stmt = conn->createStatement();
+			
+			//Build core tables
+			stmt->execute("CREATE TABLE `Users` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `username` VARCHAR(255) UNIQUE NOT NULL, `hashedpasswd` BINARY(64) NOT NULL, `permissions` SMALLINT UNSIGNED NOT NULL, INDEX (`username`)) ENGINE=InnoDB");
+			
+			stmt->execute("CREATE TABLE `Entities` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(255) NULL DEFAULT NULL,`type` VARCHAR(255) NOT NULL, `user_id` INT UNSIGNED NULL, FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB");
+			
+			stmt->execute("CREATE TABLE `etc` (`key` VARCHAR(255) PRIMARY KEY, `value` VARCHAR(255) NOT NULL) ENGINE=InnoDB");
+			
+			stmt->execute("CREATE TABLE `WorldFlags` (`map` VARCHAR(255) NOT NULL, `x` INT NOT NULL, `y` INT NOT NULL, `flag` VARCHAR(255) NOT NULL, PRIMARY KEY `WorldFlagsLocation` (`map`, `x`, `y`)) ENGINE=InnoDB");
+			
+			stmt->execute("CREATE TABLE `WorldValues` (`map` VARCHAR(255) NOT NULL, `x` INT NOT NULL, `y` INT NOT NULL, `value` FLOAT NOT NULL, PRIMARY KEY `WorldValuesLocation` (`map`, `x`, `y`)) ENGINE=InnoDB");
+
+			//Build component tables
+			Json::Value components = _moduleconfig.get("components", Json::Value());
+			for (unsigned int n = 0;n < components.size(); n++)
+			{
+				Json::Value componentdef = ReadJSONFile(get_module_path() + "components/" + components[n].asString() + ".json");
+				std::string querystr = "CREATE TABLE `" + components[n].asString() + "Components` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, ";
+				std::vector<std::string> membernames = componentdef.getMemberNames();
+				for (unsigned int namen = 0;namen < membernames.size();namen++)
+				{
+					std::string name = membernames[namen];
+					std::string type = componentdef[name].asString();
+					std::string definition = "";
+					if (type == "Uint")
+						definition = "INT UNSIGNED NOT NULL";
+					else if (type == "Int")
+						definition = "INT NOT NULL";
+					else if (type == "String")
+						definition = "VARCHAR(255) NOT NULL";
+					else if (type == "Bool")
+						definition = "BOOLEAN NOT NULL";
+					else
+						throw teh::Exceptions::InvalidComponentDefinition(components[n].asString(), name, type);
+					
+					querystr += "`" + name + "` " + definition + ", ";
+				}
+				querystr += "`entity_id` INT UNSIGNED UNIQUE NOT NULL, FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB;";
+				
+				stmt->execute(querystr);
+			}
+			
+			delete stmt;
+			delete conn;
+			
+			std::string firstinitstr = _moduleconfig.get("firstinit", Json::Value("")).asString();
+			
+			unsigned int pos = firstinitstr.find(':');
+			if (pos != std::string::npos)
+			{
+				std::string firstinitname = firstinitstr.substr(0, pos);
+				std::string firstinitfunction = firstinitstr.substr(pos+1);
+				System* firstinit = get_system(firstinitname);
+				firstinit->startup(firstinitfunction);
+			}
+			
+			//World* world = get_world();
+			//world->save();
+		}
+		
+		std::pair<long int, long int> Engine::globalspawnpoint()
+		{
+			return std::make_pair((long int)-1, (long int)-1);
 		}
 		
 		MySQL* Engine::sql()
@@ -172,7 +330,7 @@ namespace teh
 		
 		bool Engine::is_pc_name_active(const std::string& name)
 		{
-			Entity* character = findCharacter(this, name);
+			Entity* character = findCharacter(name);
 			if (!character)
 				return false;
 			
@@ -186,13 +344,27 @@ namespace teh
 			
 			unsigned int userid = get_client(client)->userid();
 			
-			Entity* character = get_entity(entityid);
-			Component* userownership = character->component("userownership");
+			sql::Connection* conn = sql()->connect();
 			
-			if (userownership->getUInt("user_id") != userid)
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Entities` WHERE `id` = ? AND `user_id` = ?");
+			prep_stmt->setUInt(1, entityid);
+			prep_stmt->setUInt(2, userid);
+			
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			
+			if (res->rowsCount() == 0)
+			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
 				return false;
+			}
 			
 			_client2pc[client] = entityid;
+			
+			delete res;
+			delete prep_stmt;
+			delete conn;
 			return true;
 		}
 		
@@ -201,7 +373,7 @@ namespace teh
 			if (get_pc(client))
 				return false;
 			
-			Entity* character = findCharacter(this, name);
+			Entity* character = findCharacter(name);
 			if (!character)
 				return false;
 			
@@ -214,7 +386,7 @@ namespace teh
 			
 			sql::Connection* conn = sql()->connect();
 			
-			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `Entities`.`name` FROM `Entities` JOIN `userownershipComponents` WHERE `Entities`.`id` = `userownershipComponents`.`entity_id` AND `Entities`.`type` LIKE '%.character.entity' AND `userownershipComponents`.`user_id` = ?");
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `name` FROM `Entities` WHERE `type` = 'player.character.entity' AND `user_id` = ?");
 			prep_stmt->setUInt(1, userid);
 			
 			sql::ResultSet* res = prep_stmt->executeQuery();
@@ -253,6 +425,34 @@ namespace teh
 			{
 				message_client(player, msg);
 			}
+		}
+		
+		Entity* Engine::findCharacter(const std::string& name)
+		{
+			sql::Connection* conn = sql()->connect();
+			
+			//Find it
+			sql::PreparedStatement* prep_stmt = conn->prepareStatement("SELECT `id` FROM `Entities` WHERE `type` LIKE '%.character.entity' AND `name` = ?");
+			prep_stmt->setString(1, name);
+			
+			sql::ResultSet* res = prep_stmt->executeQuery();
+			
+			if (res->rowsCount() == 0)
+			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
+				return 0;
+			}
+			res->next();
+			unsigned int entityid = res->getUInt(1);
+			
+			delete res;
+			delete prep_stmt;
+			
+			delete conn;
+			
+			return get_entity(entityid);
 		}
 		
 		void Engine::queue_action(unsigned int entityid, Action* action)
@@ -295,19 +495,30 @@ namespace teh
 		void Engine::tick()
 		{
 			cleanup();
-			System* actionhandler = get_system("actionhandler");
-			for (auto i = _entityactions.begin(); i != _entityactions.end();i++)
+			if (_actionhandler != "")
 			{
-				Entity* entity = get_entity((*i).first);
-				if (!entity)
-					continue;
-				if ((*i).second.empty())
-					continue;
-				Action* action = (*i).second.front();
-				(*i).second.pop();
+				unsigned int pos = _actionhandler.find(':');
+				std::string handlersystem = _actionhandler.substr(0, pos);
+				std::string handlerfunction = _actionhandler.substr(pos+1);
 				
-				actionhandler->process_action(action);
-				delete action;
+				System* actionhandler = get_system(handlersystem);
+				for (auto i = _entityactions.begin(); i != _entityactions.end();i++)
+				{
+					Entity* entity = get_entity((*i).first);
+					if (!entity)
+						continue;
+					if ((*i).second.empty())
+						continue;
+					Action* action = (*i).second.front();
+					(*i).second.pop();
+					
+					actionhandler->process_action(action, handlerfunction);
+					delete action;
+				}
+			}			
+			else
+			{
+				std::cerr << "Tried to tick, but no defined action handler..." << std::endl;
 			}
 		}
 		
