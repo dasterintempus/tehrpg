@@ -108,6 +108,9 @@ namespace teh
 			
 			if (res->rowsCount() == 0)
 			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
 				throw teh::Exceptions::ComponentNotFound(componenttype, parent->id());
 			}
 			
@@ -193,6 +196,8 @@ namespace teh
 				prep_stmt->setString(1, value);
 				prep_stmt->setUInt(2, id());
 				prep_stmt->execute();
+				delete prep_stmt;
+				delete conn;
 			}
 		}
 	
@@ -224,6 +229,8 @@ namespace teh
 				prep_stmt->setInt(1, value);
 				prep_stmt->setUInt(2, id());
 				prep_stmt->execute();
+				delete prep_stmt;
+				delete conn;
 			}
 		}
 	
@@ -255,6 +262,8 @@ namespace teh
 				prep_stmt->setUInt(1, value);
 				prep_stmt->setUInt(2, id());
 				prep_stmt->execute();
+				delete prep_stmt;
+				delete conn;
 			}
 		}
 	
@@ -286,6 +295,8 @@ namespace teh
 				prep_stmt->setBoolean(1, value);
 				prep_stmt->setUInt(2, id());
 				prep_stmt->execute();
+				delete prep_stmt;
+				delete conn;
 			}
 		}
 		
@@ -411,6 +422,9 @@ namespace teh
 			prep_stmt->setUInt(1, _id);
 			
 			prep_stmt->execute();
+			
+			delete prep_stmt;
+			delete conn;
 		}
 	}
 }

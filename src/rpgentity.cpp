@@ -23,6 +23,9 @@ namespace teh
 			sql::ResultSet* res = prep_stmt->executeQuery();
 			if (res->rowsCount() != 1)
 			{
+				delete res;
+				delete prep_stmt;
+				delete conn;
 				throw teh::Exceptions::EntityNotFound(_id);
 			}
 			res->next();
@@ -86,6 +89,8 @@ namespace teh
 			
 			prep_stmt->execute();
 			
+			delete prep_stmt;
+			delete conn;
 			_engine->delete_entity(this);
 		}
 		
