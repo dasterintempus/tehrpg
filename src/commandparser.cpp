@@ -2,23 +2,6 @@
 
 namespace teh
 {
-	std::string stringjoin(const stringvector& list, const std::string& sep)
-	{
-		std::stringstream out;
-		for (unsigned int n=0;n<list.size();n++)
-		{
-			if (n == list.size() - 1)
-			{
-				out << list[n];
-			}
-			else
-			{
-				out << list[n] << sep;
-			}
-		}
-		return out.str();
-	}
-	
 	CommandHandlerInterface::~CommandHandlerInterface()
 	{
 		

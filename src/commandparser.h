@@ -5,30 +5,10 @@
 #include <sstream>
 #include "typedefs.h"
 
+#include "stringutil.h"
+
 namespace teh
-{
-	template <class T>
-	bool is_numeric(const std::string& in)
-	{
-		std::stringstream conv;
-		conv << in;
-		T n;
-		conv >> n;
-		return !conv.fail();
-	}
-	
-	template <class T>
-	T to_numeric(const std::string& in)
-	{
-		std::stringstream conv;
-		conv << in;
-		T n;
-		conv >> n;
-		return n;
-	}
-	
-	std::string stringjoin(const stringvector& list, const std::string& sep = " ");
-	
+{	
 	struct Command
 	{
 		clientid client;
