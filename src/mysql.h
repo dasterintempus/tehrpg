@@ -20,18 +20,8 @@ namespace teh
 			MySQL(const std::string& hostname, unsigned short int port, const std::string& username, const std::string& password, const std::string& schema);
 			~MySQL();
 		
-			bool register_user(const std::string& username, const std::string& password, const unsigned short int& permissions);
-			bool validate_login(unsigned int userid, const std::string& challenge, const std::string& challengeresponse);
-			unsigned int get_userid(const std::string& username);
-			std::string get_username(unsigned int userid);
-			unsigned short int get_permissions(unsigned int userid);
-			bool set_permissions(unsigned int userid, const unsigned short int& permissions);
-		
 			sql::Connection* connect();
 		private:
-			std::string hash_sha512(std::string input);
-			std::string to_hex(std::string input);
-			
 			std::string _connectstr;
 			std::string _username;
 			std::string _password;

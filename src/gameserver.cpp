@@ -2,7 +2,7 @@
 #include <sstream>
 
 #include "application.h"
-#include "mysql.h"
+#include "userutil.h"
 #include "rpgengine.h"
 #include "metagamecommandhandler.h"
 
@@ -243,7 +243,7 @@ namespace teh
 	
 	void GameServer::update_permissions(GameClient* client)
 	{
-		client->permissions(_parent->sql()->get_permissions(client->userid()));
+		client->permissions(get_permissions(_parent->sql(), client->userid()));
 	}
 	
 	void GameServer::process_line(const clientid& id, const std::string& line)

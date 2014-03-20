@@ -4,6 +4,7 @@
 #include "rpgcomponent.h"
 #include "exceptions.h"
 #include "mysql.h"
+#include "stringutil.h"
 #include <sstream>
 
 namespace teh
@@ -120,7 +121,7 @@ namespace teh
 			int NP_select_fcall(lua_State* L)
 			{
 				int argc = lua_gettop(L);
-				if (argc < 2 || argc%2 == 1) //Needs even number of arguments
+				if (argc < 3 || argc%2 == 0) //Needs odd number of arguments
 				{
 					//TODO: Error?
 					lua_pop(L, argc);
@@ -135,7 +136,7 @@ namespace teh
 				}
 				Engine* engine = static_cast<Engine*>(ud);
 				std::vector<std::string> tables;
-				for (int argn = 3; argn <= argc; argn+=2)
+				for (int argn = 4; argn <= argc; argn+=2)
 				{
 					std::string tablename = lua_tostring(L, argn);
 					tablename += "Components";
@@ -156,7 +157,7 @@ namespace teh
 				{
 					query << "`Entities`.`type` LIKE '" << lua_tostring(L, 2) << "' AND ";
 				}
-				for (int argn = 4; argn <= argc; argn+=2)
+				for (int argn = 5; argn <= argc; argn+=2)
 				{
 					lua_pushnil(L);
 					while (lua_next(L, argn) != 0)
@@ -167,19 +168,31 @@ namespace teh
 						if (lua_type(L, -2) == LUA_TSTRING)
 						{
 							std::string column = lua_tostring(L, -2);
-							query << "`" << tables[(argn-4)/2] << "`.`" << column << "` = ";
+							query << "`" << tables[(argn-5)/2] << "`.`" << column << "` ";
 							int type = lua_type(L, -1);
 							if (type == LUA_TSTRING)
 							{
-								query << "'" << lua_tostring(L, -1) << "'";
+								query << "= '" << lua_tostring(L, -1) << "'";
 							}
 							else if (type == LUA_TNUMBER)
 							{
-								query << lua_tonumber(L, -1);
+								query << "= " << lua_tonumber(L, -1);
 							}
 							else if (type == LUA_TBOOLEAN)
 							{
-								query << lua_toboolean(L, -1);
+								query << "= " << lua_toboolean(L, -1);
+							}
+							else if (type == LUA_TTABLE)
+							{
+								lua_pushnumber(L, 1);
+								lua_gettable(L, -2); //now the value, cause we pushed something
+								query << ">= " << lua_tonumber(L, -2) << " "; //the value from the inner table
+								lua_pop(L, 1); //inner table value popped
+								
+								lua_pushnumber(L, 2);
+								lua_gettable(L, -2); //now the value, cause we pushed something
+								query << "AND `" << tables[(argn-5)/2] << "`.`" << column << "` <= " << lua_tonumber(L, -2); //the value from the inner table
+								lua_pop(L, 1); //inner table value popped
 							}
 							query << " AND ";
 						}
@@ -196,6 +209,77 @@ namespace teh
 					else
 					{
 						query << "`Entities`.`id` = `" << tables[n] << "`.`entity_id` AND ";
+					}
+				}
+				if (lua_type(L, 3) != LUA_TTABLE)
+				{	
+					std::vector<std::string> ordercols;
+					lua_pushnil(L);
+					while (lua_next(L, 3) != 0)
+					{
+						// key at -2
+						// value at -1
+						unsigned int key = (unsigned int)lua_tonumber(L, -2);
+						std::string val = lua_tostring(L, -1);
+						
+						while (key >= ordercols.size())
+						{
+							ordercols.push_back(std::string());
+						}
+						ordercols[key] = val;
+						
+						lua_pop(L, 1); //remove value
+					}
+					
+					for (unsigned int n = 0;n < ordercols.size(); n++)
+					{
+						std::string orderentry = ordercols[n];
+						if (orderentry == "")
+							continue;
+						
+						bool asc = true;
+						if (orderentry[0] == '-')
+						{
+							orderentry = orderentry.substr(1);
+							asc = false;
+						}
+						std::vector<std::string> ordersplit = stringsplit(orderentry, ".");
+						std::string ordertable = ordersplit[0] + "Components";
+						std::string ordercol = ordersplit[1];
+						if (n == 0)
+							query << " ORDER BY `" << ordertable << "`.`" << ordercol << "`";
+						else
+							query << ", `" << ordertable << "`.`" << ordercol << "`";
+						if (asc)
+						{
+							query << " ASC";
+						}
+						else
+						{
+							query << " DESC";
+						}
+					}
+				}
+				else if (lua_type(L, 3) == LUA_TSTRING)
+				{
+					std::string orderentry = lua_tostring(L, 3);
+					bool asc = true;
+					if (orderentry[0] == '-')
+					{
+						orderentry = orderentry.substr(1);
+						asc = false;
+					}
+					std::vector<std::string> ordersplit = stringsplit(orderentry, ".");
+					std::string ordertable = ordersplit[0] + "Components";
+					std::string ordercol = ordersplit[1];
+					query << " ORDER BY `" << ordertable << "`.`" << ordercol << "`";
+					if (asc)
+					{
+						query << " ASC";
+					}
+					else
+					{
+						query << " DESC";
 					}
 				}
 				lua_pop(L, argc);

@@ -1,6 +1,6 @@
 #include "metagamecommandhandler.h"
 #include "gameserver.h"
-#include "mysql.h"
+#include "userutil.h"
 #include "rpgengine.h"
 
 namespace teh
@@ -26,7 +26,7 @@ namespace teh
 					return;
 				}
 				std::string username = cmd.arguments[1];
-				unsigned int userid = _parent->sql()->get_userid(username);
+				unsigned int userid = get_userid(_parent->sql(), username);
 				
 				if (_parent->find_from_userid(userid) == -1)
 				{
@@ -68,7 +68,7 @@ namespace teh
 					return;
 				}
 				
-				if (_parent->sql()->validate_login(client->userid(), client->challenge(), cmd.arguments[1]))
+				if (validate_login(_parent->sql(), client->userid(), client->challenge(), cmd.arguments[1]))
 				{
 					client->state(GameClient::LoggedInState);
 					_parent->update_permissions(client);
@@ -113,7 +113,7 @@ namespace teh
 						return;
 					}
 					
-					if (_parent->sql()->register_user(cmd.arguments[1], cmd.arguments[2], 1))
+					if (register_user(_parent->sql(), cmd.arguments[1], cmd.arguments[2], 1))
 					{
 						client->write_line("Created account.");
 					}
@@ -133,7 +133,7 @@ namespace teh
 				if (client->permissions() & GameClient::RootPermissions || cmd.client == 0)
 				{
 					client->write_line("Initiating shutdown");
-					_parent->shutdown(_parent->sql()->get_username(client->userid()));
+					_parent->shutdown(get_username(_parent->sql(), client->userid()));
 				}
 				else
 				{
@@ -151,8 +151,8 @@ namespace teh
 						client->write_line("Usage: /settperms {username} {permissions}");
 						return;
 					}
-					unsigned int targetuser = _parent->sql()->get_userid(cmd.arguments[1]);
-					if (_parent->sql()->set_permissions(targetuser, to_numeric<unsigned short int>(cmd.arguments[2])))
+					unsigned int targetuser = get_userid(_parent->sql(), cmd.arguments[1]);
+					if (set_permissions(_parent->sql(), targetuser, to_numeric<unsigned short int>(cmd.arguments[2])))
 					{
 						client->write_line("Permissions set.");
 					}
